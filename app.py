@@ -13,7 +13,7 @@ st.markdown("Explore how the BBC and The Guardian cover renewable energy policy.
 @st.cache_data
 def load_data():
     # Load your cleaned and processed articles
-    df = pd.read_csv("processed_news_articles (5).csv", encoding='utf-8-sig')
+    df = pd.read_csv("df_clean_with_topics.csv", encoding='utf-8-sig')
     df['published_date'] = pd.to_datetime(df['published_date'])
     return df
 

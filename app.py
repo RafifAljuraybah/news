@@ -9,10 +9,8 @@ st.title("🇬🇧 UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the BBC and The Guardian cover renewable energy policy.")
 
 # 2. Load the Data
-# We use @st.cache_data so the app only loads the CSV once, making it fast!
 @st.cache_data
 def load_articles():
-    # Load your cleaned and processed articles
     df = pd.read_csv("df_clean_with_topics.csv", encoding='utf-8-sig')
     df['published_date'] = pd.to_datetime(df['published_date'])
     return df
@@ -22,7 +20,7 @@ def load_sentiment():
     df = pd.read_csv("sentiment_lite.csv", encoding='utf-8-sig')
     df['published_date'] = pd.to_datetime(df['published_date'])
     return df
-    
+
 articles_df = load_articles()
 sentiment_df = load_sentiment()
 
@@ -30,17 +28,18 @@ sentiment_df = load_sentiment()
 st.sidebar.header("Filter the Data")
 selected_outlet = st.sidebar.multiselect(
     "Select News Outlet:", 
-    options=df['outlet'].unique(),
-    default=df['outlet'].unique()
+    options=articles_df['outlet'].unique(),
+    default=articles_df['outlet'].unique()
 )
 
-# Filter the dataframe based on user selection
-filtered_df = df[df['outlet'].isin(selected_outlet)]
+# Apply filters
+filtered_articles = articles_df[articles_df['outlet'].isin(selected_outlet)]
 filtered_sentiment = sentiment_df[sentiment_df['outlet'].isin(selected_outlet)]
 
+# Create Tabs for a clean UI
 tab1, tab2, tab3 = st.tabs(["📈 Coverage & Density", "😊 Sentiment Analysis", "📰 Article Reader"])
 
-# 4. Show the Overall Trend
+# --- TAB 1: COVERAGE & DENSITY ---
 with tab1:
     st.subheader("Coverage Over Time")
     time_trend = filtered_articles.groupby([pd.Grouper(key='published_date', freq='ME'), 'outlet']).size().unstack(fill_value=0)
@@ -52,6 +51,7 @@ with tab1:
     density_trend = filtered_sentiment.groupby(pd.Grouper(key='published_date', freq='ME'))[['policy_density', 'renewable_density']].mean()
     st.line_chart(density_trend)
 
+# --- TAB 2: SENTIMENT ANALYSIS ---
 with tab2:
     st.subheader("Overall Sentiment Distribution by Aspect")
     st.markdown("How is the tone divided between Policy terms and Renewable Energy terms?")
@@ -75,8 +75,8 @@ with tab2:
         st.dataframe(filtered_sentiment[['aspect_category', 'target_term', 'sentiment', 'sentence']], use_container_width=True)
     else:
         st.dataframe(filtered_sentiment[filtered_sentiment['sentiment'] == selected_sentiment][['aspect_category', 'target_term', 'sentiment', 'sentence']], use_container_width=True)
-        
-# 5. The Interactive Article Reader
+
+# --- TAB 3: ARTICLE READER ---
 with tab3:
     st.subheader("Dive into the Articles")
     

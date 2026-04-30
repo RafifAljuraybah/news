@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.dates as mdates
@@ -24,8 +25,11 @@ aspect_map = {'Policy': ['policy', 'government', 'law'], 'Renewables': ['solar',
 # 2. Load the Data & Models
 @st.cache_resource
 def load_topic_model():
-    # Loads the safetensors folder you extracted from Colab
-    return BERTopic.load("bertopic_model_dir")
+    # Gets the absolute path of the directory containing app.py
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_dir, "bertopic_model_dir")
+    
+    return BERTopic.load(model_path)
 
 @st.cache_data
 def load_articles():

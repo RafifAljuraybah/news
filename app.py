@@ -112,7 +112,8 @@ with tab1:
 
         phrases_only = word_stats[word_stats['ngram_type'] == 'bigram']
         fig2, axes = plt.subplots(1, 2, figsize=(10, 5))
-        sns.barplot(ax=axes[0], x='The Guardian', y='word', data=phrases_only.nlargest(10, 'The Guardian'), color=COLORS.get('The Guardian', 'blue'))        axes[0].set_title('The Guardian', fontsize=12, fontweight='bold')
+        sns.barplot(ax=axes[0], x='The Guardian', y='word', data=phrases_only.nlargest(10, 'The Guardian'), color=COLORS.get('The Guardian', 'blue'))        
+        axes[0].set_title('The Guardian', fontsize=12, fontweight='bold')
         sns.barplot(ax=axes[1], x='BBC', y='word', data=phrases_only.nlargest(10, 'BBC'), color=COLORS.get('BBC', 'red'))
         axes[1].set_title('BBC', fontsize=12, fontweight='bold')
         for a in axes:

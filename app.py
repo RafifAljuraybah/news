@@ -25,17 +25,15 @@ aspect_map = {'Policy': ['policy', 'government', 'law'], 'Renewables': ['solar',
 # 2. Load the Data & Models
 @st.cache_resource
 def load_topic_model():
-# 1. Get the directory where app.py is located
+    # 1. Get the directory where app.py is located
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # 2. Define the path to the model folder
-    model_path = os.path.join(base_dir, "bertopic_model_dir")
+    # 2. Update the path to include the 'Downloads' folder
+    model_path = os.path.join(base_dir, "Downloads", "bertopic_model_dir")
     
     # 3. Check if the folder actually exists to avoid a crash
     if not os.path.exists(model_path):
         st.error(f"Model directory not found at: {model_path}")
-        # If you are running locally in Downloads, try a fallback:
-        # model_path = os.path.join(base_dir, "Downloads", "bertopic_model_dir")
         return None
         
     return BERTopic.load(model_path)

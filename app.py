@@ -18,7 +18,7 @@ st.markdown("Explore how the BBC and The Guardian cover renewable energy policy.
 
 # --- DICTIONARIES AND LISTS ---
 # Be sure to update custom_stopwords and aspect_map with your full actual lists if needed!
-COLORS = {'Guardian': '#052962', 'BBC': '#B80000', 'Total': 'gray', 'Policy Focus': '#C27070', 'RE Focus': '#1E5631'}
+COLORS = {'The Guardian': '#052962', 'BBC': '#B80000', 'Total': 'gray', 'Policy Focus': '#C27070', 'RE Focus': '#1E5631'}
 custom_stopwords = ['the', 'and', 'to', 'of', 'a'] 
 aspect_map = {'Policy': ['policy', 'government', 'law'], 'Renewables': ['solar', 'wind', 'green']}
 
@@ -103,8 +103,7 @@ with tab1:
 
         phrases_only = word_stats[word_stats['ngram_type'] == 'bigram']
         fig2, axes = plt.subplots(1, 2, figsize=(10, 5))
-        sns.barplot(ax=axes[0], x='The Guardian', y='word', data=phrases_only.nlargest(10, 'The Guardian'), color=COLORS.get('Guardian', 'blue'))
-        axes[0].set_title('The Guardian', fontsize=12, fontweight='bold')
+        sns.barplot(ax=axes[0], x='The Guardian', y='word', data=phrases_only.nlargest(10, 'The Guardian'), color=COLORS.get('The Guardian', 'blue'))        axes[0].set_title('The Guardian', fontsize=12, fontweight='bold')
         sns.barplot(ax=axes[1], x='BBC', y='word', data=phrases_only.nlargest(10, 'BBC'), color=COLORS.get('BBC', 'red'))
         axes[1].set_title('BBC', fontsize=12, fontweight='bold')
         for a in axes:
@@ -129,7 +128,7 @@ with tab1:
         
         fig3, ax3 = plt.subplots(figsize=(12, 5))
         if 'The Guardian' in time_dist.columns:
-            sns.lineplot(data=time_dist, x=time_dist.index, y='The Guardian', ax=ax3, label="The Guardian", color=COLORS.get('Guardian', 'blue'), linewidth=2)
+            sns.lineplot(data=time_dist, x=time_dist.index, y='The Guardian', ax=ax3, label="The Guardian", color=COLORS.get('The Guardian', 'blue'), linewidth=2)        if 'BBC' in time_dist.columns:
         if 'BBC' in time_dist.columns:
             sns.lineplot(data=time_dist, x=time_dist.index, y='BBC', ax=ax3, label="BBC", color=COLORS.get('BBC', 'red'), linewidth=2)
         sns.lineplot(data=time_dist, x=time_dist.index, y='Total Coverage', ax=ax3, label="Total", color='gray', linestyle='--', alpha=0.5)

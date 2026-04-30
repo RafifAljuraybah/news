@@ -8,20 +8,25 @@ import matplotlib.ticker as mtick
 import matplotlib.patches as mpatches
 import textwrap
 from sklearn.feature_extraction.text import CountVectorizer
+from bertopic import BERTopic  # Added the required import for BERTopic
 
-# 1. Page Configuration & Placeholders
+# 1. Page Configuration
 st.set_page_config(page_title="UK Energy Policy Explorer", layout="wide", page_icon="🇬🇧")
 st.title("🇬🇧 UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the BBC and The Guardian cover renewable energy policy.")
 
-# --- PLACEHOLDERS (Replace these with your actual lists/dicts/models) ---
+# --- DICTIONARIES AND LISTS ---
+# Be sure to update custom_stopwords and aspect_map with your full actual lists if needed!
 COLORS = {'Guardian': '#052962', 'BBC': '#B80000', 'Total': 'gray', 'Policy Focus': '#C27070', 'RE Focus': '#1E5631'}
-custom_stopwords = ['the', 'and', 'to', 'of', 'a'] # Replace with your actual stops
-aspect_map = {'Policy': ['policy', 'government', 'law'], 'Renewables': ['solar', 'wind', 'green']} # Replace
-topic_model = None # Replace with: BERTopic.load("my_model_path") if you want live BERTopic charts
-# ------------------------------------------------------------------------
+custom_stopwords = ['the', 'and', 'to', 'of', 'a'] 
+aspect_map = {'Policy': ['policy', 'government', 'law'], 'Renewables': ['solar', 'wind', 'green']}
 
-# 2. Load the Data
+# 2. Load the Data & Models
+@st.cache_resource
+def load_topic_model():
+    # Loads the safetensors folder you extracted from Colab
+    return BERTopic.load("bertopic_model_dir")
+
 @st.cache_data
 def load_articles():
     df = pd.read_csv("df_clean_with_topics.csv", encoding='utf-8-sig')
@@ -34,6 +39,7 @@ def load_sentiment():
     df['published_date'] = pd.to_datetime(df['published_date'])
     return df
 
+topic_model = load_topic_model()
 articles_df = load_articles()
 sentiment_df = load_sentiment()
 

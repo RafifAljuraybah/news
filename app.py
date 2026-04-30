@@ -138,7 +138,7 @@ with tab1:
         
         fig3, ax3 = plt.subplots(figsize=(12, 5))
         if 'The Guardian' in time_dist.columns:
-            sns.lineplot(data=time_dist, x=time_dist.index, y='The Guardian', ax=ax3, label="The Guardian", color=COLORS.get('The Guardian', 'blue'), linewidth=2)        if 'BBC' in time_dist.columns:
+            sns.lineplot(data=time_dist, x=time_dist.index, y='The Guardian', ax=ax3, label="The Guardian", color=COLORS.get('The Guardian', 'blue'), linewidth=2)       
         if 'BBC' in time_dist.columns:
             sns.lineplot(data=time_dist, x=time_dist.index, y='BBC', ax=ax3, label="BBC", color=COLORS.get('BBC', 'red'), linewidth=2)
         sns.lineplot(data=time_dist, x=time_dist.index, y='Total Coverage', ax=ax3, label="Total", color='gray', linestyle='--', alpha=0.5)

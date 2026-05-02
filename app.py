@@ -193,15 +193,12 @@ with tab2:
         st.write("**1. How many articles survived the Topic != -1 filter?**")
         valid_topics_df = filtered_articles[filtered_articles['Topic'] != -1]
         st.write(f"Count: {valid_topics_df.columns} articles")
-
+        st.write("**3. What do the actual numbers look like? (Checking for NaNs/Zeros)**")
+        st.dataframe(valid_topics_df[['Topic',"renewable_count","policy_count","policy_density", "renewable_density", 'adj_policy_density', 'adj_renewable_density']].head())
         
-        if cols_exist:
-            st.write("**3. What do the actual numbers look like? (Checking for NaNs/Zeros)**")
-            st.dataframe(valid_topics_df[['Topic',"renewable_count","policy_count","policy_density", "renewable_density", 'adj_policy_density', 'adj_renewable_density']].head())
-            
-            st.write("**4. Checking the GroupBy and Melt step:**")
-            debug_density = valid_topics_df.groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index()
-            st.dataframe(debug_density)
+        st.write("**4. Checking the GroupBy and Melt step:**")
+        debug_density = valid_topics_df.groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index()
+        st.dataframe(debug_density)
     # --- END DEBUGGING BLOCK ---
     st.subheader("Topics' Policy vs. Technical Density")
     topic_density = filtered_articles[filtered_articles['Topic'] != -1].groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index().sort_values('Topic')

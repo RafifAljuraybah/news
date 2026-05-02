@@ -78,7 +78,7 @@ SENTIMENT_COLORS = {
     'Neutral':  '#e0e0e0',
     'Positive': '#a5d6a7',
 }
-custom_stops = ["said", "says", "bbc", "guardian", "uk", "will"]
+custom_stopwords  = ["said", "says", "bbc", "guardian", "uk", "will"]
 
 NUM_POLICY_KEYWORDS = 72
 NUM_TECH_KEYWORDS   = 89

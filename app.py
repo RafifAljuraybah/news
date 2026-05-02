@@ -44,8 +44,8 @@ st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy
 
 col1, col2, col3 = st.columns(3)
 col1.metric("Total Articles Analyzed", "1,097")
-col2.metric("Positive Sentiment", "Renewables (41.9%) vs. Policy (13.6%)")
-col3.metric("Negative Sentiment", "Renewables (9.3%) vs. Policy (33.0%)")
+col2.metric("Renewables (41.9%) vs. Policy (13.6%)", "Positive Sentiment")
+col3.metric("Renewables (9.3%) vs. Policy (33.0%)", "Negative Sentiment")
 
 st.divider()
 

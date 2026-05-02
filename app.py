@@ -42,12 +42,10 @@ st.markdown("""
 st.title("UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
 
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3 = st.columns(3)
 col1.metric("Total Articles Analyzed", "1,097")
-col2.metric("Positive Sentiment (Renewables)", "41.9%")
-col3.metric("Positive Sentiment (Policy)", "13.6%")
-col4.metric("Negative Sentiment (Renewables)", "9.3%")
-col5.metric("Negative Sentiment (Policy)", "33.0%")
+col2.metric("Positive Sentiment", "Renewables (41.9%) vs. Policy (13.6%)")
+col3.metric("Negative Sentiment", "Renewables (9.3%) vs. Policy (33.0%)")
 
 st.divider()
 
@@ -97,7 +95,7 @@ articles_df  = load_articles()
 sentiment_df = load_sentiment()
 
 # ── 3. Sidebar Filters ────────────────────────────────────────────────────────
-st.sidebar.header("🔍 Filter the Data")
+st.sidebar.header("Filter the Data")
 
 # — Outlet —
 all_outlets = sorted(articles_df['outlet'].dropna().unique().tolist())

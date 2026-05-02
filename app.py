@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import textwrap
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from bertopic import BERTopic
 import plotly.express as px
 import plotly.graph_objects as go
@@ -70,7 +70,8 @@ events = [("Climate Emergency Declared",      "2019-05-01"),
 ("GB Energy Bill Introduction",      "2024-07-25"),
 ("COP29 & 81% Emission Target",      "2024-11-12"),
 ("Clean Power 2030 Plan",            "2025-04-10"),]
-custom_stopwords  = ["said", "says", "bbc", "guardian", "uk", "will"]
+custom_stops  = ["said", "says", "bbc", "guardian", "uk", "will"]
+custom_stopwords = list(ENGLISH_STOP_WORDS.union(custom_stops))
 
 NUM_POLICY_KEYWORDS = 72
 NUM_TECH_KEYWORDS   = 89
@@ -190,9 +191,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Article Reader",
 ])
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 1 — EDA & Coverage
-# ═══════════════════════════════════════════════════════════════════════════════
+#tab 1: EDA & Coverage
 with tab1:
     st.header("Exploratory Data Analysis")
 

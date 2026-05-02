@@ -41,9 +41,18 @@ st.markdown("""
 
 st.title("UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
-col1 = st.columns(1)
-col1.metric("Total Articles Analyzed", "1,097")
-st.divider()
+# Create 5 columns to show all metrics at once
+col1, col2, col3, col4, col5 = st.columns(5)
+
+col1.metric("Total Articles", "1,097")
+
+# Positive Comparison
+col2.metric("Positive (Renewables)", "41.9%")
+col3.metric("Positive (Policy)", "13.6%")
+
+# Negative Comparison
+col4.metric("Negative (Renewables)", "9.3%")
+col5.metric("Negative (Policy)", "33.0%")
 
 COLORS = {
     'The Guardian': '#052962',

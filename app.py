@@ -43,6 +43,23 @@ def load_articles():
     df['published_date'] = pd.to_datetime(df['published_date'])
     return df
 
+
+
+@st.cache_data
+def load_articles():
+    df = pd.read_csv("df_clean_with_topics.csv", encoding='utf-8-sig')
+    df['published_date'] = pd.to_datetime(df['published_date'])
+    num_policy_keywords = 72
+    num_tech_keywords = 89  
+    df['adj_policy_density'] = df['policy_density'] / num_policy_keywords
+    df['adj_renewable_density'] = df['renewable_density'] / num_tech_keywords
+    
+    return df
+
+
+
+
+
 @st.cache_data
 def load_sentiment():
     df = pd.read_csv("sentiment_lite.csv", encoding='utf-8-sig')
@@ -183,23 +200,6 @@ with tab2:
                 st.warning(f"Could not generate hierarchy map: {e}")
     else:
         st.info("BERTopic model not loaded in Streamlit. Load your model to view the interactive Plotly maps.")
-
-
-
-
-    
-    # --- DEBUGGING BLOCK ---
-    with st.expander("🛠️ DEBUG: Why is the density chart blank?", expanded=True):
-        st.write("**1. How many articles survived the Topic != -1 filter?**")
-        valid_topics_df = filtered_articles[filtered_articles['Topic'] != -1]
-        st.write(f"Count: {valid_topics_df.columns} articles")
-        st.write("**3. What do the actual numbers look like? (Checking for NaNs/Zeros)**")
-        st.dataframe(valid_topics_df[['Topic',"renewable_count","policy_count","policy_density", "renewable_density", 'adj_policy_density', 'adj_renewable_density']].head())
-        
-        st.write("**4. Checking the GroupBy and Melt step:**")
-        debug_density = valid_topics_df.groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index()
-        st.dataframe(debug_density)
-    # --- END DEBUGGING BLOCK ---
     st.subheader("Topics' Policy vs. Technical Density")
     topic_density = filtered_articles[filtered_articles['Topic'] != -1].groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index().sort_values('Topic')
     

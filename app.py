@@ -220,7 +220,6 @@ with tab1:
 
     with col2:
         st.subheader("Top Phrases: Guardian vs BBC")
-
         if count_matrix is not None:
             guardian_mask = (filtered_articles['outlet'] == 'The Guardian').to_numpy()
             bbc_mask      = (filtered_articles['outlet'] == 'BBC').to_numpy()
@@ -299,18 +298,15 @@ with tab1:
         )
         st.plotly_chart(fig3, use_container_width=True)
 
-        with st.expander("📋 Event Key"):
+        with st.expander("Events Key"):
             for i, (label, date_str) in enumerate(events, 1):
                 st.markdown(f"**{i}.** {label} — *{date_str}*")
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — Topic Modelling
-# ═══════════════════════════════════════════════════════════════════════════════
+#tab 2 topic modelling
 with tab2:
     st.header("Topic Modelling Insights")
-
-    # ── BERTopic methodology note ────────────────────────────────────────────
-    with st.expander("ℹ️ What is BERTopic?", expanded=False):
+    #  BERTopic methodology note
+    with st.expander("What is BERTopic?", expanded=False):
         st.markdown("""
 <div class="info-box">
 <b>BERTopic</b> is an NLP topic-modelling technique that combines transformer-based sentence
@@ -323,8 +319,8 @@ keywords and documents for each cluster.
 </div>
 """, unsafe_allow_html=True)
 
-    # ── Density methodology note ─────────────────────────────────────────────
-    with st.expander("📐 How are keyword densities calculated?", expanded=False):
+    #density methodology note
+    with st.expander("How are keyword densities calculated?", expanded=False):
         st.markdown(f"""
 <div class="method-box">
 Two curated keyword lists were used throughout this project:
@@ -351,28 +347,6 @@ Where <code>list_size</code> = {NUM_POLICY_KEYWORDS} for policy and {NUM_TECH_KE
 The bar charts below show the <b>mean</b> adjusted density across all articles in each topic cluster.
 </div>
 """, unsafe_allow_html=True)
-
-    # ── Intertopic distance & hierarchy ──────────────────────────────────────
-    if topic_model is not None:
-        st.subheader("Intertopic Distance & Hierarchy")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            try:
-                fig_dist = topic_model.visualize_topics(
-                    title="<b>Intertopic Distance Map</b>", custom_labels=True)
-                st.plotly_chart(fig_dist, use_container_width=True)
-            except Exception as e:
-                st.warning(f"Could not generate distance map: {e}")
-        with col_t2:
-            try:
-                fig_hier = topic_model.visualize_hierarchy(
-                    title="<b>Topic Hierarchy</b>", custom_labels=True)
-                st.plotly_chart(fig_hier, use_container_width=True)
-            except Exception as e:
-                st.warning(f"Could not generate hierarchy map: {e}")
-    else:
-        st.info("BERTopic model not loaded. Intertopic distance and hierarchy charts will appear once the model file is available.")
-
     # ── Policy vs Technical density — ordered by Topic ID ───────────────────
     st.subheader("Topics: Policy vs Renewable-Energy Keyword Density")
 
@@ -446,6 +420,29 @@ The bar charts below show the <b>mean</b> adjusted density across all articles i
             yaxis=dict(categoryorder='array', categoryarray=ordered_topic_labels),
         )
         st.plotly_chart(fig5, use_container_width=True)
+
+    # ── Intertopic distance & hierarchy ──────────────────────────────────────
+    if topic_model is not None:
+        st.subheader("Intertopic Distance & Hierarchy")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            try:
+                fig_dist = topic_model.visualize_topics(
+                    title="<b>Intertopic Distance Map</b>", custom_labels=True)
+                st.plotly_chart(fig_dist, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not generate distance map: {e}")
+        with col_t2:
+            try:
+                fig_hier = topic_model.visualize_hierarchy(
+                    title="<b>Topic Hierarchy</b>", custom_labels=True)
+                st.plotly_chart(fig_hier, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not generate hierarchy map: {e}")
+    else:
+        st.info("BERTopic model not loaded. Intertopic distance and hierarchy charts will appear once the model file is available.")
+
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — Sentiment Analysis

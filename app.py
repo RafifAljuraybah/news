@@ -372,7 +372,7 @@ The bar charts below show the <b>mean</b> adjusted density across all articles i
         fig4.update_layout(
             xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
             yaxis_title="",
-            yaxis=dict(categoryorder='array', categoryarray=ordered_labels))
+            yaxis=dict(categoryorder='array', categoryarray=ordered_labels[:-1]))
         st.plotly_chart(fig4, use_container_width=True)
     else:
         st.info("No topic data available for the selected filters.")

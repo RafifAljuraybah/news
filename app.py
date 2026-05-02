@@ -41,7 +41,8 @@ st.markdown("""
 
 st.title("UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
-st.columns(1).metric("Total Articles Analyzed", "1,097")
+col1 = st.columns(1)
+col1.metric("Total Articles Analyzed", "1,097")
 st.divider()
 
 COLORS = {

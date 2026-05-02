@@ -2,19 +2,18 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
-import textwrap
-from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from bertopic import BERTopic
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-#1. page config
+# ── 1. PAGE CONFIG ────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="UK Energy Policy Explorer",
     layout="wide",
-    page_icon="🇬🇧"
+    page_icon="🇬🇧",
 )
+
 st.markdown("""
 <style>
     [data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: 700; }
@@ -36,651 +35,541 @@ st.markdown("""
         font-size: 0.92rem;
         line-height: 1.6;
     }
+    .faq-box {
+        background: #fffbf0;
+        border-left: 4px solid #f9a825;
+        border-radius: 6px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+        font-size: 0.92rem;
+        line-height: 1.7;
+    }
+    .topic-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 0.7rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("UK Renewable Energy & Policy News Explorer")
-st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
-st.metric("Total Articles Analyzed", "1,097")
-st.divider()
-
+# ── 2. CONSTANTS ──────────────────────────────────────────────────────────────
 COLORS = {
     'The Guardian': '#052962',
-    'BBC': '#B80000',
+    'BBC':          '#B80000',
     'Total Coverage': '#808080',
     'Policy Focus': '#C27070',
-    'RE Focus': '#1E5631',
+    'RE Focus':     '#1E5631',
 }
 SENTIMENT_COLORS = {
     'Negative': '#ffb3b3',
     'Neutral':  '#e0e0e0',
     'Positive': '#a5d6a7',
 }
-events = [("Climate Emergency Declared",      "2019-05-01"),
-("UK Net Zero 2050 Law Passed",      "2019-06-27"),
-("10 Point Plan Launch",             "2020-11-18"),
-("Green Homes Grant Scrapped",       "2021-03-03"),
-("Energy Crisis Starts",             "2021-09-01"),
-("Net Zero Strategy & COP26",        "2021-10-19"),
-("Energy Security Strategy",         "2022-04-07"),
-("Energy Price Guarantee",           "2022-09-08"),
-("Whitehaven Coal Mine Approved",    "2022-12-07"),
-("Powering Up Britain Strategy",     "2023-03-30"),
-("Net Zero Rollbacks",               "2023-09-20"),
-("GB Energy Bill Introduction",      "2024-07-25"),
-("COP29 & 81% Emission Target",      "2024-11-12"),
-("Clean Power 2030 Plan",            "2025-04-10"),]
-custom_stops  = ["said", "says", "bbc", "guardian", "uk", "will"]
-custom_stopwords = list(ENGLISH_STOP_WORDS.union(custom_stops))
-
 NUM_POLICY_KEYWORDS = 72
 NUM_TECH_KEYWORDS   = 89
 
-#2. load data & models
+EVENTS = [
+    ("Climate Emergency Declared",      "2019-05-01"),
+    ("UK Net Zero 2050 Law Passed",      "2019-06-27"),
+    ("10 Point Plan Launch",             "2020-11-18"),
+    ("Green Homes Grant Scrapped",       "2021-03-03"),
+    ("Energy Crisis Starts",             "2021-09-01"),
+    ("Net Zero Strategy & COP26",        "2021-10-19"),
+    ("Energy Security Strategy",         "2022-04-07"),
+    ("Energy Price Guarantee",           "2022-09-08"),
+    ("Whitehaven Coal Mine Approved",    "2022-12-07"),
+    ("Powering Up Britain Strategy",     "2023-03-30"),
+    ("Net Zero Rollbacks",               "2023-09-20"),
+    ("GB Energy Bill Introduction",      "2024-07-25"),
+    ("COP29 & 81% Emission Target",      "2024-11-12"),
+    ("Clean Power 2030 Plan",            "2025-04-10"),
+]
+
+# ── 3. DATA LOADING ───────────────────────────────────────────────────────────
 @st.cache_resource
 def load_topic_model():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir   = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_dir, "Downloads", "bertopic_model_dir")
     if not os.path.exists(model_path):
-        st.error(f"Model directory not found at: {model_path}")
         return None
     return BERTopic.load(model_path)
 
 @st.cache_data
 def load_articles():
-    df = pd.read_csv("df_clean_with_topics.csv", encoding='utf-8-sig')
-    df['published_date'] = pd.to_datetime(df['published_date'])
-    df['adj_policy_density']   = df['policy_density']   / NUM_POLICY_KEYWORDS
-    df['adj_renewable_density'] = df['renewable_density'] / NUM_TECH_KEYWORDS
+    df = pd.read_csv("df_clean_with_topics.csv", encoding="utf-8-sig")
+    df["published_date"]         = pd.to_datetime(df["published_date"])
+    df["adj_policy_density"]     = df["policy_density"]   / NUM_POLICY_KEYWORDS
+    df["adj_renewable_density"]  = df["renewable_density"] / NUM_TECH_KEYWORDS
     return df
 
 @st.cache_data
 def load_sentiment():
-    df = pd.read_csv("sentiment_lite.csv", encoding='utf-8-sig')
-    df['published_date'] = pd.to_datetime(df['published_date'])
+    df = pd.read_csv("sentiment_lite.csv", encoding="utf-8-sig")
+    df["published_date"] = pd.to_datetime(df["published_date"])
     return df
 
 topic_model  = load_topic_model()
 articles_df  = load_articles()
 sentiment_df = load_sentiment()
 
-#3. sidebar filters
-st.sidebar.header("Filter the Data")
+# ── 4. HEADER ─────────────────────────────────────────────────────────────────
+st.title("🇬🇧 UK Renewable Energy & Policy News Explorer")
+st.markdown(
+    "Explore how the **BBC** and **The Guardian** cover renewable energy policy **(2017–2025)**."
+)
+st.divider()
 
-#3.1 outlet
-all_outlets = sorted(articles_df['outlet'].dropna().unique().tolist())
+# ── 5. SIDEBAR FILTERS ────────────────────────────────────────────────────────
+st.sidebar.header("🔎 Filter the Data")
+
+all_outlets = sorted(articles_df["outlet"].dropna().unique().tolist())
 selected_outlet = st.sidebar.multiselect(
-    "News Outlet:",
-    options=all_outlets,
-    default=all_outlets,
-    help="Filter articles by publisher."
+    "News Outlet:", options=all_outlets, default=all_outlets,
+    help="Filter articles by publisher.",
 )
 
-#3.2. date range
-min_date = articles_df['published_date'].min().date()
-max_date = articles_df['published_date'].max().date()
+min_date = articles_df["published_date"].min().date()
+max_date = articles_df["published_date"].max().date()
 date_range = st.sidebar.date_input(
     "Publication Date Range:",
-    value=(min_date, max_date),
-    min_value=min_date,
-    max_value=max_date,
-    help="Restrict analysis to articles published in this window."
+    value=(min_date, max_date), min_value=min_date, max_value=max_date,
 )
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     start_date, end_date = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1])
 else:
     start_date, end_date = pd.Timestamp(min_date), pd.Timestamp(max_date)
 
-#3.3 topic
 all_topics = sorted(
-    articles_df['Topic_Label'].dropna().unique().tolist(),
-    key=lambda lbl: articles_df.loc[articles_df['Topic_Label'] == lbl, 'Topic'].min()
+    articles_df["Topic_Label"].dropna().unique().tolist(),
+    key=lambda lbl: articles_df.loc[articles_df["Topic_Label"] == lbl, "Topic"].min(),
 )
 selected_topics = st.sidebar.multiselect(
-    "BERTopic Topics:",
-    options=all_topics,
-    default=all_topics,
-    help="Show only articles assigned to these topics. Topic -1 = outliers."
+    "BERTopic Topics:", options=all_topics, default=all_topics,
+    help="Show only articles assigned to these topics. Topic -1 = outliers.",
 )
 
-#3.4. aspect category (for sentiment tab)
-all_aspects = sorted(sentiment_df['aspect_category'].dropna().unique().tolist())
+all_aspects    = sorted(sentiment_df["aspect_category"].dropna().unique().tolist())
 selected_aspects = st.sidebar.multiselect(
-    "Aspect Categories (Sentiment):",
-    options=all_aspects,
-    default=all_aspects,
-    help="Filter sentiment charts by the aspect (Policy / Renewables / etc.)."
+    "Aspect Categories (Sentiment):", options=all_aspects, default=all_aspects,
 )
 
-#3.5. sentiment
-all_sentiments = ['Positive', 'Neutral', 'Negative']
+all_sentiments     = ["Positive", "Neutral", "Negative"]
 selected_sentiments = st.sidebar.multiselect(
-    "Sentiment Labels:",
-    options=all_sentiments,
-    default=all_sentiments,
-    help="Include only these sentiment classes in the analysis."
+    "Sentiment Labels:", options=all_sentiments, default=all_sentiments,
 )
 
 st.sidebar.divider()
 st.sidebar.caption(
     f"**Dataset:** {NUM_POLICY_KEYWORDS} policy keywords · "
-    f"{NUM_TECH_KEYWORDS} renewable-energy keywords  \n"
-    "Same keyword lists were used both to **filter** the articles "
-    "and to compute **keyword densities**."
+    f"{NUM_TECH_KEYWORDS} renewable-energy keywords"
 )
 
-#apply filters
+# ── 6. APPLY FILTERS ──────────────────────────────────────────────────────────
 filtered_articles = articles_df[
-    articles_df['outlet'].isin(selected_outlet) &
-    articles_df['published_date'].between(start_date, end_date) &
-    articles_df['Topic_Label'].isin(selected_topics)
+    articles_df["outlet"].isin(selected_outlet) &
+    articles_df["published_date"].between(start_date, end_date) &
+    articles_df["Topic_Label"].isin(selected_topics)
 ].copy()
 
 filtered_sentiment = sentiment_df[
-    sentiment_df['outlet'].isin(selected_outlet) &
-    sentiment_df['published_date'].between(start_date, end_date) &
-    sentiment_df['aspect_category'].isin(selected_aspects) &
-    sentiment_df['sentiment'].isin(selected_sentiments)
+    sentiment_df["outlet"].isin(selected_outlet) &
+    sentiment_df["published_date"].between(start_date, end_date) &
+    sentiment_df["aspect_category"].isin(selected_aspects) &
+    sentiment_df["sentiment"].isin(selected_sentiments)
 ].copy()
 
-#4. Tabs
-tab1, tab2, tab3, tab4 = st.tabs([
-    "EDA & Coverage",
-    "Topic Modelling",
-    "Sentiment Analysis",
-    "Article Reader",
+# ── 7. TABS ───────────────────────────────────────────────────────────────────
+tab1, tab2, tab3 = st.tabs([
+    "📊 Main Insights",
+    "🔬 Topics & Articles",
+    "ℹ️ About & Methods",
 ])
 
-#tab 1: EDA & Coverage
+# ════════════════════════════════════════════════════════════════════════════════
+# TAB 1 — MAIN INSIGHTS
+# ════════════════════════════════════════════════════════════════════════════════
 with tab1:
-    st.header("Exploratory Data Analysis")
 
-    col1, col2 = st.columns(2)
+    # ── 7.1 Interactive article count ─────────────────────────────────────────
+    total_filtered    = len(filtered_articles)
+    guardian_filtered = len(filtered_articles[filtered_articles["outlet"] == "The Guardian"])
+    bbc_filtered      = len(filtered_articles[filtered_articles["outlet"] == "BBC"])
 
-    with col1:
-        st.subheader("Top 15 Frequent Terms")
-        top_n = 15
-        count_vc    = CountVectorizer(ngram_range=(1, 2), stop_words=custom_stopwords, max_df=1.0)
-        clean_texts = filtered_articles['clean_text'].fillna('')
-
-        if len(clean_texts) > 0:
-            count_matrix = count_vc.fit_transform(clean_texts)
-            counts   = np.asarray(count_matrix.sum(axis=0)).ravel()
-            freq_df  = pd.DataFrame({'term': count_vc.get_feature_names_out(), 'score': counts})
-            freq_df  = freq_df.sort_values('score', ascending=True).tail(top_n)
-
-            fig1 = px.bar(freq_df, x='score', y='term', orientation='h',
-                          title=f'Top {top_n} Frequent Terms',
-                          color_discrete_sequence=['#1a3a6b'])
-            fig1.update_layout(xaxis_title='Frequency', yaxis_title='', showlegend=False)
-            st.plotly_chart(fig1, use_container_width=True)
-        else:
-            st.info("No articles match the current filters.")
-            count_matrix = None
-
-    with col2:
-        st.subheader("Top Phrases: Guardian vs BBC")
-        if count_matrix is not None:
-            guardian_mask = (filtered_articles['outlet'] == 'The Guardian').to_numpy()
-            bbc_mask      = (filtered_articles['outlet'] == 'BBC').to_numpy()
-
-            word_stats = pd.DataFrame({
-                'word': count_vc.get_feature_names_out(),
-                'Guardian_Raw': count_matrix[guardian_mask].sum(axis=0).A1 if guardian_mask.any() else 0,
-                'BBC_Raw':      count_matrix[bbc_mask].sum(axis=0).A1      if bbc_mask.any()      else 0,
-            })
-            g_total = word_stats['Guardian_Raw'].sum()
-            b_total = word_stats['BBC_Raw'].sum()
-            word_stats['The Guardian'] = (word_stats['Guardian_Raw'] / g_total * 1000).fillna(0) if g_total else 0
-            word_stats['BBC']          = (word_stats['BBC_Raw']      / b_total * 1000).fillna(0) if b_total else 0
-            word_stats['ngram_type']   = word_stats['word'].apply(lambda x: 'bigram' if len(x.split()) > 1 else 'unigram')
-
-            phrases_only = word_stats[word_stats['ngram_type'] == 'bigram']
-
-            c1, c2 = st.columns(2)
-            with c1:
-                df_g = phrases_only.nlargest(10, 'The Guardian').sort_values('The Guardian', ascending=True)
-                fig_g = px.bar(df_g, x='The Guardian', y='word', orientation='h',
-                               title='The Guardian',
-                               color_discrete_sequence=[COLORS['The Guardian']])
-                fig_g.update_layout(xaxis_title='Freq per 1k Words', yaxis_title='',
-                                    margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig_g, use_container_width=True)
-
-            with c2:
-                df_b = phrases_only.nlargest(10, 'BBC').sort_values('BBC', ascending=True)
-                fig_b = px.bar(df_b, x='BBC', y='word', orientation='h',
-                               title='BBC',
-                               color_discrete_sequence=[COLORS['BBC']])
-                fig_b.update_layout(xaxis_title='Freq per 1k Words', yaxis_title='',
-                                    margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig_b, use_container_width=True)
-
+    m1, m2, m3 = st.columns(3)
+    m1.metric("📰 Total Articles", f"{total_filtered:,}")
+    m2.metric("🔵 The Guardian",   f"{guardian_filtered:,}")
+    m3.metric("🔴 BBC",            f"{bbc_filtered:,}")
     st.divider()
+
+    # ── 7.2 Coverage over time ────────────────────────────────────────────────
     st.subheader("Coverage Over Time & Key Policy Events")
 
     time_dist = (
         filtered_articles
-        .groupby([pd.Grouper(key='published_date', freq='ME'), 'outlet'])
+        .groupby([pd.Grouper(key="published_date", freq="ME"), "outlet"])
         .size()
         .unstack(fill_value=0)
     )
 
     if not time_dist.empty:
-        time_dist['Total Coverage'] = time_dist.sum(axis=1)
-
+        time_dist["Total Coverage"] = time_dist.sum(axis=1)
         time_dist_melted = time_dist.reset_index().melt(
-            id_vars='published_date', var_name='Outlet', value_name='Count')
-
-        fig3 = px.line(
-            time_dist_melted, x='published_date', y='Count', color='Outlet',
-            color_discrete_map=COLORS,
-            title='UK Energy Policy Online News Coverage',
+            id_vars="published_date", var_name="Outlet", value_name="Count"
         )
-        for trace in fig3.data:
-            if trace.name == 'Total Coverage':
-                trace.line.dash  = 'dash'
-                trace.line.color = 'gray'
 
-        for i, (label, date_str) in enumerate(events, 1):
+        fig_coverage = px.line(
+            time_dist_melted, x="published_date", y="Count", color="Outlet",
+            color_discrete_map=COLORS,
+            title="UK Energy Policy Online News Coverage",
+        )
+        for trace in fig_coverage.data:
+            if trace.name == "Total Coverage":
+                trace.line.dash  = "dash"
+                trace.line.color = "gray"
+
+        for i, (label, date_str) in enumerate(EVENTS, 1):
             date_dt = pd.to_datetime(date_str)
             if time_dist.index.min() <= date_dt <= time_dist.index.max():
-                idx   = time_dist.index.get_indexer([date_dt], method='nearest')[0]
-                y_val = time_dist.iloc[idx]['Total Coverage']
-                fig3.add_annotation(
+                idx   = time_dist.index.get_indexer([date_dt], method="nearest")[0]
+                y_val = time_dist.iloc[idx]["Total Coverage"]
+                fig_coverage.add_annotation(
                     x=date_dt, y=y_val, text=f"<b>{i}</b>",
-                    showarrow=True, arrowhead=1, ay=-40, hovertext=label
+                    showarrow=True, arrowhead=1, ay=-40, hovertext=label,
                 )
 
-        fig3.update_layout(
-            xaxis_title='Year', yaxis_title='Number of Articles',
-            hovermode="x unified"
+        fig_coverage.update_layout(
+            xaxis_title="Year", yaxis_title="Number of Articles",
+            hovermode="x unified",
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig_coverage, use_container_width=True)
 
-        with st.expander("Events Key"):
-            for i, (label, date_str) in enumerate(events, 1):
+        with st.expander("📌 Events Key"):
+            for i, (label, date_str) in enumerate(EVENTS, 1):
                 st.markdown(f"**{i}.** {label} — *{date_str}*")
+    else:
+        st.info("No articles match the current filters.")
 
-#tab 2 topic modelling
-with tab2:
-    st.header("Topic Modelling Insights")
-    #  BERTopic methodology note
-    with st.expander("What is BERTopic?", expanded=False):
-        st.markdown("""
-<div class="info-box">
-<b>BERTopic</b> is an NLP topic-modelling technique that combines transformer-based sentence
-embeddings (BERT) with dimensionality reduction (UMAP) and density-based clustering (HDBSCAN)
-to discover coherent topics without requiring a pre-specified number of clusters.<br><br>
-Each article in this corpus is assigned to exactly one topic (or to <b>Topic -1</b>,
-the "outlier" bucket for articles that do not fit any coherent cluster).<br><br>
-Topic labels shown here were manually assigned after inspecting the top representative
-keywords and documents for each cluster.
-</div>
-""", unsafe_allow_html=True)
+    st.divider()
 
-    #density methodology note
-    with st.expander("How are keyword densities calculated?", expanded=False):
-        st.markdown(f"""
-<div class="method-box">
-Two curated keyword lists were used throughout this project:
+    # ── 7.3 Top 3 Topics by Volume ────────────────────────────────────────────
+    st.subheader("Top 3 Topics by Volume")
 
-<ul>
-  <li><b>Policy keywords</b> — {NUM_POLICY_KEYWORDS} terms (e.g., <i>net zero, legislation, subsidy, planning permission</i>)</li>
-  <li><b>Renewable-energy keywords</b> — {NUM_TECH_KEYWORDS} terms (e.g., <i>solar, offshore wind, heat pump, battery storage</i>)</li>
-</ul>
-
-<b>Important:</b> these are the <em>same</em> lists used to filter the raw news corpus — only articles
-containing at least three terms from each list were included in the dataset. This means density
-scores reflect relative emphasis within an already-topically-relevant sample, not the full news
-output of each outlet.<br><br>
-
-<b>Density formula</b><br>
-For each article the raw keyword count is divided by the total vocabulary of its list, then
-normalised to a per-1,000-word rate:
-
-<pre>
-Adjusted Density = (raw_keyword_hits / list_size) / article_word_count × 1,000
-</pre>
-
-Where <code>list_size</code> = {NUM_POLICY_KEYWORDS} for policy and {NUM_TECH_KEYWORDS} for renewables.
-The bar charts below show the <b>mean</b> adjusted density across all articles in each topic cluster.
-</div>
-""", unsafe_allow_html=True)
-    #policy vs technical density
-    st.subheader("Topics: Policy vs Renewable-Energy Keyword Density")
-
-    topic_density = (
-        filtered_articles[filtered_articles['Topic'] != -1]
-        .groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']]
-        .mean().reset_index().sort_values('Topic', ascending=True))
-
-    if not topic_density.empty:
-        ordered_labels = topic_density['Topic_Label'].tolist()
-        topic_density_melted = topic_density.melt(
-            id_vars=['Topic', 'Topic_Label'],
-            value_vars=['adj_policy_density', 'adj_renewable_density'],
-            var_name='Keyword Type', value_name='Density')
-        topic_density_melted['Keyword Type'] = topic_density_melted['Keyword Type'].map({
-            'adj_policy_density':   'Policy Focus',
-            'adj_renewable_density':'RE Focus'})
-
-        fig4 = px.bar(
-            topic_density_melted, x="Density", y="Topic_Label", color="Keyword Type",
-            barmode='group', orientation='h', color_discrete_map=COLORS,
-            title="Mean Adjusted Keyword Density by Topic (ordered by Topic ID)")
-        fig4.update_layout(
-            xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
-            yaxis_title="",
-            yaxis=dict(categoryorder='array', categoryarray=ordered_labels[:-1]))
-        st.plotly_chart(fig4, use_container_width=True)
+    non_outlier = filtered_articles[filtered_articles["Topic"] != -1]
+    if not non_outlier.empty:
+        topic_counts = (
+            non_outlier.groupby(["Topic", "Topic_Label"])
+            .size()
+            .reset_index(name="count")
+            .sort_values("count", ascending=False)
+            .head(3)
+        )
+        top3_cols = st.columns(3)
+        rank_labels = ["🥇", "🥈", "🥉"]
+        for idx, (col, (_, row)) in enumerate(zip(top3_cols, topic_counts.iterrows())):
+            col.metric(
+                label=f"{rank_labels[idx]} {row['Topic_Label']}",
+                value=f"{row['count']:,} articles",
+            )
     else:
         st.info("No topic data available for the selected filters.")
 
-    #topic focus by outlet
-    st.subheader("Topic Focus by News Outlet")
-    total_per_outlet   = filtered_articles.groupby('outlet').size()
-    topic_per_outlet   = (filtered_articles.groupby(['outlet', 'Topic', 'Topic_Label']).size().reset_index(name='count'))
-    if not topic_per_outlet.empty:
-        topic_per_outlet['percentage'] = topic_per_outlet.apply(
-            lambda x: (x['count'] / total_per_outlet[x['outlet']]) * 100
-            if x['outlet'] in total_per_outlet.index else 0,
-            axis=1)
-        plot_df = (topic_per_outlet[topic_per_outlet['Topic'] != -1].sort_values('Topic', ascending=True))
-        ordered_topic_labels = plot_df.drop_duplicates('Topic').sort_values('Topic')['Topic_Label'].tolist()
+    st.divider()
 
-        fig5 = px.bar(
-            plot_df, x="percentage", y="Topic_Label", color="outlet",
-            barmode='group', orientation='h', color_discrete_map=COLORS,
-            title="Topic Prevalence within Each Outlet's Total Coverage")
-        fig5.update_layout(
-            xaxis_title="Share of Outlet's Total Coverage (%)",
+    # ── 7.4 Policy vs RE Density by Topic ────────────────────────────────────
+    st.subheader("Policy vs Renewable-Energy Keyword Density by Topic")
+    st.caption(
+        "Mean adjusted keyword density per topic — how heavily each topic leans "
+        "on policy language vs renewable-energy technology language."
+    )
+
+    topic_density = (
+        non_outlier
+        .groupby(["Topic", "Topic_Label"])[["adj_policy_density", "adj_renewable_density"]]
+        .mean()
+        .reset_index()
+        .sort_values("Topic", ascending=True)
+    )
+
+    if not topic_density.empty:
+        ordered_labels = topic_density["Topic_Label"].tolist()
+        topic_density_melted = topic_density.melt(
+            id_vars=["Topic", "Topic_Label"],
+            value_vars=["adj_policy_density", "adj_renewable_density"],
+            var_name="Keyword Type", value_name="Density",
+        )
+        topic_density_melted["Keyword Type"] = topic_density_melted["Keyword Type"].map(
+            {"adj_policy_density": "Policy Focus", "adj_renewable_density": "RE Focus"}
+        )
+
+        fig_density = px.bar(
+            topic_density_melted, x="Density", y="Topic_Label", color="Keyword Type",
+            barmode="group", orientation="h", color_discrete_map=COLORS,
+            title="Mean Adjusted Keyword Density by Topic",
+        )
+        fig_density.update_layout(
+            xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
             yaxis_title="",
-            yaxis=dict(categoryorder='array', categoryarray=ordered_topic_labels))
-        st.plotly_chart(fig5, use_container_width=True)
-
-    #intertopic distance & hierarchy
-    if topic_model is not None:
-        st.subheader("Intertopic Distance & Hierarchy")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            try:
-                fig_dist = topic_model.visualize_topics(
-                    title="<b>Intertopic Distance Map</b>", custom_labels=True)
-                st.plotly_chart(fig_dist, use_container_width=True)
-            except Exception as e:
-                st.warning(f"Could not generate distance map: {e}")
-        with col_t2:
-            try:
-                fig_hier = topic_model.visualize_hierarchy(
-                    title="<b>Topic Hierarchy</b>", custom_labels=True)
-                st.plotly_chart(fig_hier, use_container_width=True)
-            except Exception as e:
-                st.warning(f"Could not generate hierarchy map: {e}")
+            yaxis=dict(categoryorder="array", categoryarray=ordered_labels),
+        )
+        st.plotly_chart(fig_density, use_container_width=True)
     else:
-        st.info("BERTopic model not loaded. Intertopic distance and hierarchy charts will appear once the model file is available.")
+        st.info("No topic data for the selected filters.")
 
+    st.divider()
 
-#tab 3 — Sentiment Analysis
-with tab3:
-    st.header("Sentiment Analysis")
+    # ── 7.5 Sentiment Gap (Renewables vs Policy) ─────────────────────────────
+    st.subheader("Sentiment Gap: Renewables vs Policy")
+    st.caption(
+        "Difference in % **positive** sentiment between Renewables and Policy coverage. "
+        "Positive values mean renewables are framed more positively than policy; "
+        "negative values mean the reverse."
+    )
 
-    # ABSA methodology note 
-    with st.expander("What is Aspect-Based Sentiment Analysis (ABSA)?", expanded=False):
-        st.markdown("""
-<div class="info-box">
-Standard sentiment analysis assigns a single positive/negative/neutral score to an entire text.
-<b>Aspect-Based Sentiment Analysis (ABSA)</b> is more granular: it identifies specific <em>aspects</em>
-(topics or entities) within a sentence and scores the sentiment expressed <em>toward each aspect
-independently</em>.<br><br>
-
-In this study, two aspects were tracked across every sentence in the corpus:
-
-<ul>
-  <li><b>Policy</b> — sentences mentioning government action, legislation, planning, subsidies, etc.</li>
-  <li><b>Renewables</b> — sentences mentioning solar, wind, hydrogen, heat pumps, battery storage, etc.</li>
-</ul>
-
-A sentence can carry <em>different</em> sentiments toward each aspect — for example, a sentence may
-express optimism about renewable technology while being critical of government policy.<br><br>
-
-Sentiment labels (<b>Positive / Neutral / Negative</b>) were assigned using a fine-tuned transformer
-classifier run at the sentence level. The charts below aggregate these sentence-level labels
-to article, outlet, and time-period granularity.
-</div>
-""", unsafe_allow_html=True)
-
-    order = ['Negative', 'Neutral', 'Positive']
-
-    col_s1, col_s2 = st.columns(2)
-
-    with col_s1:
-        st.subheader("Sentiment Distribution by Aspect")
-        dist = (
+    if not filtered_sentiment.empty and len(all_aspects) >= 2:
+        gap_df = (
             filtered_sentiment
-            .groupby(['aspect_category', 'sentiment'])
+            .groupby(["aspect_category", "sentiment"])
             .size()
             .unstack(fill_value=0)
-            .reindex(columns=order, fill_value=0))
+        )
+        # Ensure Positive column exists
+        for col in ["Positive", "Neutral", "Negative"]:
+            if col not in gap_df.columns:
+                gap_df[col] = 0
 
-        if not dist.empty:
-            dist_pct       = dist.div(dist.sum(axis=1), axis=0) * 100
-            dist_pct_reset = dist_pct.reset_index()
+        gap_df["pct_positive"] = gap_df["Positive"] / gap_df.sum(axis=1) * 100
+        gap_df["pct_negative"] = gap_df["Negative"] / gap_df.sum(axis=1) * 100
 
-            fig6 = go.Figure()
-            for sentiment in order:
-                fig6.add_trace(go.Bar(
-                    y=dist_pct_reset['aspect_category'],
-                    x=dist_pct_reset[sentiment],
-                    name=sentiment,
-                    orientation='h',
-                    marker=dict(color=SENTIMENT_COLORS[sentiment]),
-                ))
-            fig6.update_layout(
-                barmode='stack',
-                xaxis_title='% of Sentences',
-                yaxis_title='',
-                legend_title='Sentiment')
-            st.plotly_chart(fig6, use_container_width=True)
-        else:
-            st.info("No sentiment data for current filters.")
+        aspects_present = gap_df.index.tolist()
 
-    with col_s2:
-        st.subheader("Sentiment by Outlet & Aspect")
-        outlets = filtered_sentiment['outlet'].dropna().unique()
+        # Build a simple bar showing positive/negative pct side-by-side per aspect
+        gap_summary = gap_df[["pct_positive", "pct_negative"]].reset_index()
+        gap_summary.columns = ["Aspect", "% Positive", "% Negative"]
+        gap_summary_melted = gap_summary.melt(
+            id_vars="Aspect", var_name="Sentiment Type", value_name="Percentage"
+        )
 
-        if len(outlets) > 0:
-            dist_out = (
-                filtered_sentiment
-                .groupby(['outlet', 'aspect_category', 'sentiment'])
-                .size()
-                .unstack(fill_value=0)
-                .reindex(columns=order, fill_value=0))
-            dist_out_pct = dist_out.div(dist_out.sum(axis=1), axis=0) * 100
-            dist_out_pct = (
-                dist_out_pct
-                .reset_index()
-                .melt(id_vars=['outlet', 'aspect_category'],
-                      value_vars=order,
-                      var_name='sentiment', value_name='percentage'))
+        color_map = {"% Positive": "#a5d6a7", "% Negative": "#ffb3b3"}
+        fig_gap = px.bar(
+            gap_summary_melted, x="Aspect", y="Percentage",
+            color="Sentiment Type", barmode="group",
+            color_discrete_map=color_map,
+            title="% Positive vs % Negative Sentiment by Aspect",
+        )
+        fig_gap.update_layout(yaxis_title="% of Sentences", xaxis_title="")
+        st.plotly_chart(fig_gap, use_container_width=True)
 
-            fig7 = px.bar(
-                dist_out_pct, x='percentage', y='aspect_category',
-                color='sentiment', facet_col='outlet', orientation='h',
-                color_discrete_map=SENTIMENT_COLORS)
-            fig7.update_layout(barmode='stack', xaxis_title='% of Sentences', yaxis_title='')
-            fig7.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-            st.plotly_chart(fig7, use_container_width=True)
-        else:
-            st.info("Select at least one outlet to view this chart.")
+        # Show the actual numeric gap if both Renewables and Policy are present
+        if "Renewables" in aspects_present and "Policy" in aspects_present:
+            re_pos  = gap_df.loc["Renewables", "pct_positive"]
+            pol_pos = gap_df.loc["Policy",     "pct_positive"]
+            gap_val = re_pos - pol_pos
+            direction = "more positively" if gap_val > 0 else "more negatively"
+            st.info(
+                f"Across the filtered data, **Renewables** are framed **{abs(gap_val):.1f} percentage points "
+                f"{direction}** than **Policy** in terms of positive sentiment."
+            )
+    else:
+        st.info("Not enough sentiment data to compute a gap. Check your filters.")
 
-    #sentiment trend over time 
-    st.subheader("Sentiment Trend Over Time (by Aspect)")
-    aspects = filtered_sentiment['aspect_category'].dropna().unique()
-    if len(aspects) > 0:
-        for aspect in aspects:
-            subset = filtered_sentiment[filtered_sentiment['aspect_category'] == aspect].copy()
-            subset.set_index('published_date', inplace=True)
-            time_dist_s = (
+    st.divider()
+
+    # ── 7.6 Sentiment Trend Over Time ─────────────────────────────────────────
+    st.subheader("Sentiment Trend Over Time (Policy vs Renewables)")
+    st.caption("Quarterly share of positive, neutral, and negative sentences — stacked by aspect.")
+
+    order = ["Negative", "Neutral", "Positive"]
+    aspects_in_data = filtered_sentiment["aspect_category"].dropna().unique()
+
+    if len(aspects_in_data) > 0:
+        for aspect in aspects_in_data:
+            subset = filtered_sentiment[
+                filtered_sentiment["aspect_category"] == aspect
+            ].copy()
+            subset.set_index("published_date", inplace=True)
+
+            time_sent = (
                 subset
-                .groupby([pd.Grouper(freq='QE'), 'sentiment'])
+                .groupby([pd.Grouper(freq="QE"), "sentiment"])
                 .size()
                 .unstack(fill_value=0)
-                .reindex(columns=order, fill_value=0))
+                .reindex(columns=order, fill_value=0)
+            )
 
-            if not time_dist_s.empty:
-                time_dist_pct = time_dist_s.div(time_dist_s.sum(axis=1), axis=0) * 100
-                time_dist_pct = time_dist_pct.reset_index()
+            if not time_sent.empty:
+                time_sent_pct = time_sent.div(time_sent.sum(axis=1), axis=0) * 100
+                time_sent_pct = time_sent_pct.reset_index()
 
-                fig8 = go.Figure()
+                fig_trend = go.Figure()
                 for sentiment in order:
-                    fig8.add_trace(go.Scatter(
-                        x=time_dist_pct['published_date'],
-                        y=time_dist_pct[sentiment],
+                    fig_trend.add_trace(go.Scatter(
+                        x=time_sent_pct["published_date"],
+                        y=time_sent_pct[sentiment],
                         name=sentiment,
-                        mode='lines',
-                        stackgroup='one',
+                        mode="lines",
+                        stackgroup="one",
                         line=dict(width=0.5, color=SENTIMENT_COLORS[sentiment]),
                         fillcolor=SENTIMENT_COLORS[sentiment],
                     ))
-                fig8.update_layout(
-                    title=f"Sentiment Trend: {aspect}", xaxis_title='Quarter',
-                    yaxis_title='% of Sentences', yaxis_range=[0, 100])
-                st.plotly_chart(fig8, use_container_width=True)
+                fig_trend.update_layout(
+                    title=f"Sentiment Trend: {aspect}",
+                    xaxis_title="Quarter",
+                    yaxis_title="% of Sentences",
+                    yaxis_range=[0, 100],
+                )
+                st.plotly_chart(fig_trend, use_container_width=True)
     else:
-        st.info("No data to display for the selected aspect and sentiment filters.")
+        st.info("No sentiment data available for the selected filters.")
 
-    #sentence explorer 
-    st.subheader("Explore Analysed Sentences")
 
-    c_asp, c_sent, c_out2 = st.columns(3)
-    with c_asp:
-        exp_aspect = st.selectbox(
-            "Aspect:", ["All"] + sorted(all_aspects), key="sent_explorer_aspect")
-    with c_sent:
-        exp_sent = st.selectbox(
-            "Sentiment:", ["All"] + all_sentiments, key="sent_explorer_sent")
-    with c_out2:
-        exp_outlet = st.selectbox(
-            "Outlet:", ["All"] + all_outlets, key="sent_explorer_outlet")
+# ════════════════════════════════════════════════════════════════════════════════
+# TAB 2 — TOPICS & ARTICLES
+# ════════════════════════════════════════════════════════════════════════════════
+with tab2:
 
-    explorer_df = filtered_sentiment.copy()
-    if exp_aspect != "All":
-        explorer_df = explorer_df[explorer_df['aspect_category'] == exp_aspect]
-    if exp_sent != "All":
-        explorer_df = explorer_df[explorer_df['sentiment'] == exp_sent]
-    if exp_outlet != "All":
-        explorer_df = explorer_df[explorer_df['outlet'] == exp_outlet]
-
-    st.dataframe(
-        explorer_df[['published_date', 'outlet', 'aspect_category', 'target_term', 'sentiment', 'sentence']]
-        .rename(columns={
-            'published_date':   'Date',
-            'outlet':           'Outlet',
-            'aspect_category':  'Aspect',
-            'target_term':      'Target Term',
-            'sentiment':        'Sentiment',
-            'sentence':         'Sentence',
-        })
-        .reset_index(drop=True),
-        use_container_width=True,
-        height=400,
+    # ── 8.1 Topic Overview ────────────────────────────────────────────────────
+    st.header("Topic Overview")
+    st.caption(
+        "Each topic was discovered automatically by BERTopic. The representative "
+        "article titles below give a flavour of what each cluster is about."
     )
 
-#tab 4
-with tab4:
+    non_outlier_t2 = filtered_articles[filtered_articles["Topic"] != -1].copy()
+
+    if not non_outlier_t2.empty:
+        topic_summary = (
+            non_outlier_t2
+            .groupby(["Topic", "Topic_Label"])
+            .size()
+            .reset_index(name="Article Count")
+            .sort_values("Topic", ascending=True)
+        )
+
+        for _, row in topic_summary.iterrows():
+            topic_articles = non_outlier_t2[
+                non_outlier_t2["Topic_Label"] == row["Topic_Label"]
+            ]
+            # Take up to 3 representative titles (most recent)
+            rep_titles = (
+                topic_articles
+                .sort_values("published_date", ascending=False)["title"]
+                .dropna()
+                .head(3)
+                .tolist()
+            )
+
+            with st.expander(
+                f"**{row['Topic_Label']}** — {row['Article Count']} articles", expanded=False
+            ):
+                st.markdown("**Sample article titles:**")
+                for t in rep_titles:
+                    st.markdown(f"- {t}")
+    else:
+        st.info("No topic data available for the selected filters.")
+
+    st.divider()
+
+    # ── 8.2 Article Reader ────────────────────────────────────────────────────
     st.header("📰 Article Reader")
 
-    available_topics = (
-        filtered_articles[filtered_articles['Topic'] != -1]
-        ['Topic_Label'].dropna().unique().tolist()
-    )
-    # Sort by Topic integer
-    available_topics = sorted(
-        available_topics,
+    available_topics_t2 = sorted(
+        non_outlier_t2["Topic_Label"].dropna().unique().tolist(),
         key=lambda lbl: filtered_articles.loc[
-            filtered_articles['Topic_Label'] == lbl, 'Topic'].min()
+            filtered_articles["Topic_Label"] == lbl, "Topic"
+        ].min(),
     )
 
-    if len(available_topics) > 0:
+    if len(available_topics_t2) > 0:
         col_r1, col_r2 = st.columns([1, 2])
 
         with col_r1:
-            selected_topic = st.selectbox("1. Filter by Topic:", available_topics)
-            topic_df       = filtered_articles[filtered_articles['Topic_Label'] == selected_topic]
+            selected_topic_t2 = st.selectbox(
+                "1. Filter by Topic:", available_topics_t2, key="reader_topic"
+            )
+            topic_df = filtered_articles[
+                filtered_articles["Topic_Label"] == selected_topic_t2
+            ].copy()
 
             outlet_filter_reader = st.selectbox(
                 "2. Filter by Outlet:",
-                ["All"] + sorted(topic_df['outlet'].dropna().unique().tolist()),
+                ["All"] + sorted(topic_df["outlet"].dropna().unique().tolist()),
                 key="reader_outlet",
             )
             if outlet_filter_reader != "All":
-                topic_df = topic_df[topic_df['outlet'] == outlet_filter_reader]
+                topic_df = topic_df[topic_df["outlet"] == outlet_filter_reader]
 
-            topic_df_sorted  = topic_df.sort_values('published_date', ascending=False)
-            title_options    = topic_df_sorted['title'].dropna().tolist()
-            selected_title   = st.selectbox("3. Choose an Article:", title_options)
+            topic_df_sorted = topic_df.sort_values("published_date", ascending=False)
+            title_options   = topic_df_sorted["title"].dropna().tolist()
+            selected_title  = st.selectbox(
+                "3. Choose an Article:", title_options, key="reader_title"
+            )
 
         with col_r2:
             if selected_title:
-                article_data = topic_df[topic_df['title'] == selected_title].iloc[0]
+                article_data = topic_df[topic_df["title"] == selected_title].iloc[0]
 
                 st.markdown(f"### {article_data['title']}")
                 meta_cols = st.columns(3)
-                meta_cols[0].metric("Outlet",    article_data['outlet'])
-                meta_cols[1].metric("Published", str(article_data['published_date'].date()))
-                meta_cols[2].metric("Topic",     article_data['Topic_Label'])
+                meta_cols[0].metric("Outlet",    article_data["outlet"])
+                meta_cols[1].metric("Published", str(article_data["published_date"].date()))
+                meta_cols[2].metric("Topic",     article_data["Topic_Label"])
 
                 density_cols = st.columns(2)
                 density_cols[0].metric(
                     "Policy Density",
                     f"{article_data['adj_policy_density']:.3f}",
-                    help=f"Hits per 1k words ÷ {NUM_POLICY_KEYWORDS} policy keywords"
+                    help=f"Hits per 1k words ÷ {NUM_POLICY_KEYWORDS} policy keywords",
                 )
                 density_cols[1].metric(
                     "Renewables Density",
                     f"{article_data['adj_renewable_density']:.3f}",
-                    help=f"Hits per 1k words ÷ {NUM_TECH_KEYWORDS} renewable keywords"
+                    help=f"Hits per 1k words ÷ {NUM_TECH_KEYWORDS} renewable keywords",
                 )
 
                 with st.expander("📄 Full Article Text", expanded=True):
-                    st.write(article_data['clean_text'])
+                    st.write(article_data["clean_text"])
 
+        # ── 8.3 Article Sentiment ─────────────────────────────────────────────
         if selected_title:
             st.divider()
-            st.subheader("Aspect-Based Sentiment: Sentences in This Article")
+            st.subheader("Aspect-Based Sentiment for This Article")
 
-            article_sentiments = sentiment_df[sentiment_df['title'] == selected_title].copy()
+            article_sentiments = sentiment_df[
+                sentiment_df["title"] == selected_title
+            ].copy()
 
             if not article_sentiments.empty:
-                # Mini sentiment bar
-                counts_art = article_sentiments['sentiment'].value_counts()
+                counts_art = article_sentiments["sentiment"].value_counts()
                 total_art  = counts_art.sum()
                 bar_cols   = st.columns(3)
-                for i, s in enumerate(['Positive', 'Neutral', 'Negative']):
+                for i, s in enumerate(["Positive", "Neutral", "Negative"]):
                     n   = counts_art.get(s, 0)
                     pct = n / total_art * 100
                     bar_cols[i].metric(s, f"{n} ({pct:.0f}%)")
 
-                # Aspect filter for this article
-                aspects_in_article = sorted(article_sentiments['aspect_category'].dropna().unique().tolist())
-                sel_aspect_reader  = st.selectbox(
+                aspects_in_article = sorted(
+                    article_sentiments["aspect_category"].dropna().unique().tolist()
+                )
+                sel_aspect_reader = st.selectbox(
                     "Filter by Aspect:",
                     ["All"] + aspects_in_article,
                     key="reader_aspect_filter",
                 )
                 if sel_aspect_reader != "All":
                     article_sentiments = article_sentiments[
-                        article_sentiments['aspect_category'] == sel_aspect_reader]
+                        article_sentiments["aspect_category"] == sel_aspect_reader
+                    ]
 
                 st.dataframe(
                     article_sentiments[[
-                        'aspect_category', 'target_term', 'sentiment', 'sentence'
+                        "aspect_category", "target_term", "sentiment", "sentence"
                     ]].rename(columns={
-                        'aspect_category': 'Aspect',
-                        'target_term':     'Target Term',
-                        'sentiment':       'Sentiment',
-                        'sentence':        'Sentence',
+                        "aspect_category": "Aspect",
+                        "target_term":     "Target Term",
+                        "sentiment":       "Sentiment",
+                        "sentence":        "Sentence",
                     }).reset_index(drop=True),
                     use_container_width=True,
                     height=400,
@@ -689,3 +578,179 @@ with tab4:
                 st.info("No sentence-level sentiment data available for this article.")
     else:
         st.info("No topic data available for the selected filters.")
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# TAB 3 — ABOUT & METHODS
+# ════════════════════════════════════════════════════════════════════════════════
+with tab3:
+    st.header("ℹ️ About This Dashboard")
+    st.markdown(
+        "This page answers the most common questions about how this dashboard works, "
+        "what the numbers mean, and how to interpret the charts — no technical background needed."
+    )
+
+    # ── What is this project? ─────────────────────────────────────────────────
+    with st.expander("📌 What is this project about?", expanded=True):
+        st.markdown("""
+<div class="faq-box">
+This dashboard analyses <b>1,097 news articles</b> published by the <b>BBC</b> and
+<b>The Guardian</b> between <b>2017 and 2025</b> that cover UK renewable energy and
+climate policy.<br><br>
+
+The goal is to understand:
+<ul>
+  <li>How much coverage each outlet dedicates to these topics over time</li>
+  <li>What the main <em>themes</em> (topics) of coverage are</li>
+  <li>Whether coverage is more focused on <em>policy & government action</em> or
+      <em>renewable technology</em></li>
+  <li>Whether the tone of coverage is <em>positive, neutral, or negative</em> —
+      and whether this differs between topics</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── What is BERTopic? ─────────────────────────────────────────────────────
+    with st.expander("🤖 What is BERTopic and how were the topics found?"):
+        st.markdown("""
+<div class="info-box">
+<b>BERTopic</b> is an AI-powered technique for grouping articles by theme —
+think of it as a very sophisticated sorting machine.<br><br>
+
+Here's how it works in plain English:
+<ol>
+  <li><b>Reading the articles</b> — Each article is converted into a list of numbers that
+      capture its meaning (using a language model called BERT). Similar articles end up
+      with similar numbers.</li>
+  <li><b>Finding clusters</b> — Articles that are mathematically "close" to each other
+      are grouped together into topics automatically. No one tells the model how many topics
+      to find — it discovers this on its own.</li>
+  <li><b>Labelling the topics</b> — Once clusters are found, the most representative
+      keywords and articles are examined and a human-readable label is assigned to each topic.</li>
+</ol>
+
+<b>Topic -1 (Outliers)</b> — Some articles don't fit neatly into any cluster and are
+placed in a catch-all "outlier" group labelled Topic -1. These are excluded from
+most charts to keep things clean.
+</div>
+""", unsafe_allow_html=True)
+
+    # ── What is keyword density? ──────────────────────────────────────────────
+    with st.expander("📐 What does 'keyword density' mean?"):
+        st.markdown(f"""
+<div class="method-box">
+Keyword density measures how much an article (or a group of articles) focuses on a
+particular theme — specifically, <b>policy language</b> or <b>renewable-energy technology language</b>.<br><br>
+
+Two curated keyword lists underpin the analysis:
+<ul>
+  <li><b>Policy keywords</b> ({NUM_POLICY_KEYWORDS} terms) — words like
+      <em>net zero, legislation, subsidy, planning permission, government target</em></li>
+  <li><b>Renewable-energy keywords</b> ({NUM_TECH_KEYWORDS} terms) — words like
+      <em>solar panels, offshore wind, heat pump, battery storage, hydrogen</em></li>
+</ul>
+
+<b>How the score is calculated:</b>
+<pre>
+Adjusted Density = (number of keyword hits in the article)
+                   ÷ (total keywords in the list)
+                   ÷ (article word count)
+                   × 1,000
+</pre>
+
+Dividing by the list size makes the two scores comparable even though the lists are
+different lengths. A higher score means the article uses more of that vocabulary
+relative to its length.
+</div>
+""", unsafe_allow_html=True)
+
+    # ── What is ABSA? ─────────────────────────────────────────────────────────
+    with st.expander("💬 What is Aspect-Based Sentiment Analysis (ABSA)?"):
+        st.markdown("""
+<div class="info-box">
+Standard sentiment analysis gives a single score (positive / negative) to an
+<em>entire</em> article. That's often too blunt.<br><br>
+
+<b>Aspect-Based Sentiment Analysis (ABSA)</b> goes sentence by sentence and asks:
+<em>"What is this sentence talking about, and what is the tone toward that specific thing?"</em><br><br>
+
+In this project, two <b>aspects</b> are tracked in every sentence:
+<ul>
+  <li><b>Policy</b> — sentences about government action, legislation, subsidies,
+      targets, planning rules, etc.</li>
+  <li><b>Renewables</b> — sentences about solar, wind, heat pumps, hydrogen,
+      battery storage, etc.</li>
+</ul>
+
+A single sentence can carry <em>different</em> tones toward each aspect. For example:<br>
+<blockquote>
+<em>"The government's offshore wind targets are hopelessly behind schedule,
+but the technology itself continues to break cost records."</em>
+</blockquote>
+This sentence would be scored <b>Negative</b> toward Policy and <b>Positive</b>
+toward Renewables.<br><br>
+
+Sentiment labels were assigned by a fine-tuned AI classifier that was trained
+specifically on news text.
+</div>
+""", unsafe_allow_html=True)
+
+    # ── How to read the sentiment gap chart ───────────────────────────────────
+    with st.expander("📊 How do I read the 'Sentiment Gap' chart?"):
+        st.markdown("""
+<div class="faq-box">
+The Sentiment Gap chart compares the share of <b>positive</b> and <b>negative</b>
+sentences for the <b>Renewables</b> aspect versus the <b>Policy</b> aspect.<br><br>
+
+<b>What to look for:</b>
+<ul>
+  <li>If the <b>Renewables bar is taller</b> on the positive side, news coverage frames
+      renewable technology more optimistically than government policy.</li>
+  <li>If the <b>Policy bar is taller</b> on the positive side, policy is covered more
+      favourably than the technology itself (less common).</li>
+  <li>A large gap in the <b>negative</b> bars shows which topic receives more critical coverage.</li>
+</ul>
+
+The summary sentence below the chart tells you the gap in percentage points at a glance.
+</div>
+""", unsafe_allow_html=True)
+
+    # ── How to use the filters ─────────────────────────────────────────────────
+    with st.expander("🔧 How do the sidebar filters work?"):
+        st.markdown("""
+<div class="faq-box">
+All filters on the left sidebar apply <b>simultaneously</b> across every chart and table
+in the dashboard (except where noted).<br><br>
+
+<ul>
+  <li><b>News Outlet</b> — Include only BBC articles, only Guardian articles, or both.</li>
+  <li><b>Publication Date Range</b> — Zoom into a specific time window (e.g. 2021–2022
+      during the energy crisis).</li>
+  <li><b>BERTopic Topics</b> — Focus on one or more specific themes.</li>
+  <li><b>Aspect Categories</b> — Restrict sentiment charts to Policy, Renewables, or both.</li>
+  <li><b>Sentiment Labels</b> — Show only positive, only negative, or all three classes.</li>
+</ul>
+
+The <b>Total Articles</b> counter at the top of the Main Insights tab updates live to
+reflect however many articles match your current filter combination.
+</div>
+""", unsafe_allow_html=True)
+
+    # ── Data sources ──────────────────────────────────────────────────────────
+    with st.expander("📚 Where does the data come from?"):
+        st.markdown("""
+<div class="faq-box">
+Articles were collected from two UK news outlets:
+<ul>
+  <li><b>The Guardian</b> — via the Guardian Open Platform API</li>
+  <li><b>BBC</b> — via web scraping of BBC News</li>
+</ul>
+
+<b>Date range:</b> January 2017 – April 2025<br><br>
+
+<b>Filtering criteria:</b> Only articles containing at least <b>three terms</b> from
+both the policy keyword list and the renewable-energy keyword list were included.
+This ensures every article in the dataset is genuinely relevant to UK energy policy —
+but it also means the dataset is a curated subset, not the complete output of either outlet.
+</div>
+""", unsafe_allow_html=True)

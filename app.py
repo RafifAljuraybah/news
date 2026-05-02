@@ -193,17 +193,11 @@ with tab2:
         st.write("**1. How many articles survived the Topic != -1 filter?**")
         valid_topics_df = filtered_articles[filtered_articles['Topic'] != -1]
         st.write(f"Count: {valid_topics_df.columns} articles")
-        
-        if len(valid_topics_df) == 0:
-            st.error("Result: Your dataframe is empty because all articles are classified as Topic -1 (Outliers).")
-        
-        st.write("**2. Do the density columns exist in the CSV?**")
-        cols_exist = 'adj_policy_density' in filtered_articles.columns and 'adj_renewable_density' in filtered_articles.columns
-        st.write(f"Exist: {cols_exist}")
+
         
         if cols_exist:
             st.write("**3. What do the actual numbers look like? (Checking for NaNs/Zeros)**")
-            st.dataframe(valid_topics_df[['Topic', 'adj_policy_density', 'adj_renewable_density']].head())
+            st.dataframe(valid_topics_df[['Topic',"renewable_count","policy_count","policy_density", "renewable_density", 'adj_policy_density', 'adj_renewable_density']].head())
             
             st.write("**4. Checking the GroupBy and Melt step:**")
             debug_density = valid_topics_df.groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']].mean().reset_index()

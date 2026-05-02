@@ -192,7 +192,7 @@ with tab2:
     with st.expander("🛠️ DEBUG: Why is the density chart blank?", expanded=True):
         st.write("**1. How many articles survived the Topic != -1 filter?**")
         valid_topics_df = filtered_articles[filtered_articles['Topic'] != -1]
-        st.write(f"Count: {len(valid_topics_df)} articles")
+        st.write(f"Count: {valid_topics_df.columns} articles")
         
         if len(valid_topics_df) == 0:
             st.error("Result: Your dataframe is empty because all articles are classified as Topic -1 (Outliers).")

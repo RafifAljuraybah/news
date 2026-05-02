@@ -42,27 +42,12 @@ st.markdown("""
 st.title("UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
 
-# Add a toggle for the user to choose the comparison view
-comparison_view = st.radio(
-    "Select Metric View:",
-    ["Compare Positive Sentiment", "Compare Negative Sentiment", "Mixed View (Original)"],
-    horizontal=True
-)
-
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Total Articles Analyzed", "1,097")
-
-if comparison_view == "Compare Positive Sentiment":
-    col2.metric("Positive Sentiment (Renewables)", "41.9%")
-    col3.metric("Positive Sentiment (Policy)", "13.6%")
-
-elif comparison_view == "Compare Negative Sentiment":
-    col2.metric("Negative Sentiment (Renewables)", "9.3%")
-    col3.metric("Negative Sentiment (Policy)", "33.0%")
-
-else: # The original mixed view
-    col2.metric("Positive Sentiment (Renewables)", "41.9%")
-    col3.metric("Negative Sentiment (Policy)", "33.0%")
+col2.metric("Positive Sentiment (Renewables)", "41.9%")
+col3.metric("Positive Sentiment (Policy)", "13.6%")
+col4.metric("Negative Sentiment (Renewables)", "9.3%")
+col5.metric("Negative Sentiment (Policy)", "33.0%")
 
 st.divider()
 

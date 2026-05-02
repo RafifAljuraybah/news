@@ -331,7 +331,7 @@ Two curated keyword lists were used throughout this project:
 </ul>
 
 <b>Important:</b> these are the <em>same</em> lists used to filter the raw news corpus — only articles
-containing at least one term from either list were included in the dataset. This means density
+containing at least three terms from each list were included in the dataset. This means density
 scores reflect relative emphasis within an already-topically-relevant sample, not the full news
 output of each outlet.<br><br>
 

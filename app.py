@@ -347,81 +347,59 @@ Where <code>list_size</code> = {NUM_POLICY_KEYWORDS} for policy and {NUM_TECH_KE
 The bar charts below show the <b>mean</b> adjusted density across all articles in each topic cluster.
 </div>
 """, unsafe_allow_html=True)
-    # ── Policy vs Technical density — ordered by Topic ID ───────────────────
+    #policy vs technical density
     st.subheader("Topics: Policy vs Renewable-Energy Keyword Density")
 
     topic_density = (
         filtered_articles[filtered_articles['Topic'] != -1]
         .groupby(['Topic', 'Topic_Label'])[['adj_policy_density', 'adj_renewable_density']]
-        .mean()
-        .reset_index()
-        .sort_values('Topic')          # ← ordered by integer Topic ID
-    )
+        .mean().reset_index().sort_values('Topic', ascending=True))
 
     if not topic_density.empty:
-        # Build ordered list of labels for the y-axis
         ordered_labels = topic_density['Topic_Label'].tolist()
-
         topic_density_melted = topic_density.melt(
             id_vars=['Topic', 'Topic_Label'],
             value_vars=['adj_policy_density', 'adj_renewable_density'],
-            var_name='Keyword Type', value_name='Density'
-        )
+            var_name='Keyword Type', value_name='Density')
         topic_density_melted['Keyword Type'] = topic_density_melted['Keyword Type'].map({
             'adj_policy_density':   'Policy Focus',
-            'adj_renewable_density':'RE Focus',
-        })
+            'adj_renewable_density':'RE Focus'})
 
         fig4 = px.bar(
             topic_density_melted, x="Density", y="Topic_Label", color="Keyword Type",
             barmode='group', orientation='h', color_discrete_map=COLORS,
-            title="Mean Adjusted Keyword Density by Topic (ordered by Topic ID)",
-        )
+            title="Mean Adjusted Keyword Density by Topic (ordered by Topic ID)")
         fig4.update_layout(
             xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
             yaxis_title="",
-            yaxis=dict(categoryorder='array', categoryarray=ordered_labels),
-        )
+            yaxis=dict(categoryorder='array', categoryarray=ordered_labels))
         st.plotly_chart(fig4, use_container_width=True)
     else:
         st.info("No topic data available for the selected filters.")
 
-    # ── Topic focus by outlet — ordered by Topic ID ───────────────────────────
+    #topic focus by outlet
     st.subheader("Topic Focus by News Outlet")
-
     total_per_outlet   = filtered_articles.groupby('outlet').size()
-    topic_per_outlet   = (
-        filtered_articles
-        .groupby(['outlet', 'Topic', 'Topic_Label'])
-        .size()
-        .reset_index(name='count')
-    )
-
+    topic_per_outlet   = (filtered_articles.groupby(['outlet', 'Topic', 'Topic_Label']).size().reset_index(name='count'))
     if not topic_per_outlet.empty:
         topic_per_outlet['percentage'] = topic_per_outlet.apply(
             lambda x: (x['count'] / total_per_outlet[x['outlet']]) * 100
             if x['outlet'] in total_per_outlet.index else 0,
-            axis=1
-        )
-        plot_df = (
-            topic_per_outlet[topic_per_outlet['Topic'] != -1]
-            .sort_values('Topic')       # ← ordered by integer Topic ID
-        )
+            axis=1)
+        plot_df = (topic_per_outlet[topic_per_outlet['Topic'] != -1].sort_values('Topic', ascending=True))
         ordered_topic_labels = plot_df.drop_duplicates('Topic').sort_values('Topic')['Topic_Label'].tolist()
 
         fig5 = px.bar(
             plot_df, x="percentage", y="Topic_Label", color="outlet",
             barmode='group', orientation='h', color_discrete_map=COLORS,
-            title="Topic Prevalence within Each Outlet's Total Coverage",
-        )
+            title="Topic Prevalence within Each Outlet's Total Coverage")
         fig5.update_layout(
             xaxis_title="Share of Outlet's Total Coverage (%)",
             yaxis_title="",
-            yaxis=dict(categoryorder='array', categoryarray=ordered_topic_labels),
-        )
+            yaxis=dict(categoryorder='array', categoryarray=ordered_topic_labels))
         st.plotly_chart(fig5, use_container_width=True)
 
-    # ── Intertopic distance & hierarchy ──────────────────────────────────────
+    #intertopic distance & hierarchy
     if topic_model is not None:
         st.subheader("Intertopic Distance & Hierarchy")
         col_t1, col_t2 = st.columns(2)
@@ -443,15 +421,12 @@ The bar charts below show the <b>mean</b> adjusted density across all articles i
         st.info("BERTopic model not loaded. Intertopic distance and hierarchy charts will appear once the model file is available.")
 
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — Sentiment Analysis
-# ═══════════════════════════════════════════════════════════════════════════════
+#tab 3 — Sentiment Analysis
 with tab3:
     st.header("Sentiment Analysis")
 
-    # ── ABSA methodology note ─────────────────────────────────────────────────
-    with st.expander("ℹ️ What is Aspect-Based Sentiment Analysis (ABSA)?", expanded=False):
+    # ABSA methodology note 
+    with st.expander("What is Aspect-Based Sentiment Analysis (ABSA)?", expanded=False):
         st.markdown("""
 <div class="info-box">
 Standard sentiment analysis assigns a single positive/negative/neutral score to an entire text.
@@ -486,8 +461,7 @@ to article, outlet, and time-period granularity.
             .groupby(['aspect_category', 'sentiment'])
             .size()
             .unstack(fill_value=0)
-            .reindex(columns=order, fill_value=0)
-        )
+            .reindex(columns=order, fill_value=0))
 
         if not dist.empty:
             dist_pct       = dist.div(dist.sum(axis=1), axis=0) * 100
@@ -506,8 +480,7 @@ to article, outlet, and time-period granularity.
                 barmode='stack',
                 xaxis_title='% of Sentences',
                 yaxis_title='',
-                legend_title='Sentiment',
-            )
+                legend_title='Sentiment')
             st.plotly_chart(fig6, use_container_width=True)
         else:
             st.info("No sentiment data for current filters.")
@@ -522,31 +495,27 @@ to article, outlet, and time-period granularity.
                 .groupby(['outlet', 'aspect_category', 'sentiment'])
                 .size()
                 .unstack(fill_value=0)
-                .reindex(columns=order, fill_value=0)
-            )
+                .reindex(columns=order, fill_value=0))
             dist_out_pct = dist_out.div(dist_out.sum(axis=1), axis=0) * 100
             dist_out_pct = (
                 dist_out_pct
                 .reset_index()
                 .melt(id_vars=['outlet', 'aspect_category'],
                       value_vars=order,
-                      var_name='sentiment', value_name='percentage')
-            )
+                      var_name='sentiment', value_name='percentage'))
 
             fig7 = px.bar(
                 dist_out_pct, x='percentage', y='aspect_category',
                 color='sentiment', facet_col='outlet', orientation='h',
-                color_discrete_map=SENTIMENT_COLORS,
-            )
+                color_discrete_map=SENTIMENT_COLORS)
             fig7.update_layout(barmode='stack', xaxis_title='% of Sentences', yaxis_title='')
             fig7.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
             st.plotly_chart(fig7, use_container_width=True)
         else:
             st.info("Select at least one outlet to view this chart.")
 
-    # ── Sentiment trend over time ─────────────────────────────────────────────
+    #sentiment trend over time 
     st.subheader("Sentiment Trend Over Time (by Aspect)")
-
     aspects = filtered_sentiment['aspect_category'].dropna().unique()
     if len(aspects) > 0:
         for aspect in aspects:
@@ -557,8 +526,7 @@ to article, outlet, and time-period granularity.
                 .groupby([pd.Grouper(freq='QE'), 'sentiment'])
                 .size()
                 .unstack(fill_value=0)
-                .reindex(columns=order, fill_value=0)
-            )
+                .reindex(columns=order, fill_value=0))
 
             if not time_dist_s.empty:
                 time_dist_pct = time_dist_s.div(time_dist_s.sum(axis=1), axis=0) * 100
@@ -576,17 +544,14 @@ to article, outlet, and time-period granularity.
                         fillcolor=SENTIMENT_COLORS[sentiment],
                     ))
                 fig8.update_layout(
-                    title=f"Sentiment Trend: {aspect}",
-                    xaxis_title='Quarter',
-                    yaxis_title='% of Sentences',
-                    yaxis_range=[0, 100],
-                )
+                    title=f"Sentiment Trend: {aspect}", xaxis_title='Quarter',
+                    yaxis_title='% of Sentences', yaxis_range=[0, 100])
                 st.plotly_chart(fig8, use_container_width=True)
     else:
         st.info("No data to display for the selected aspect and sentiment filters.")
 
-    # ── Sentence explorer ─────────────────────────────────────────────────────
-    st.subheader("🔎 Explore Sentences")
+    #sentence explorer 
+    st.subheader("Explore Analysed Sentences")
 
     c_asp, c_sent, c_out2 = st.columns(3)
     with c_asp:
@@ -622,9 +587,7 @@ to article, outlet, and time-period granularity.
         height=400,
     )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — Article Reader
-# ═══════════════════════════════════════════════════════════════════════════════
+#tab 4
 with tab4:
     st.header("📰 Article Reader")
 
@@ -683,10 +646,9 @@ with tab4:
                 with st.expander("📄 Full Article Text", expanded=True):
                     st.write(article_data['clean_text'])
 
-        # ── Sentence-level ABSA for this article ─────────────────────────────
         if selected_title:
             st.divider()
-            st.subheader("💬 Aspect-Based Sentiment — Sentences in This Article")
+            st.subheader("Aspect-Based Sentiment: Sentences in This Article")
 
             article_sentiments = sentiment_df[sentiment_df['title'] == selected_title].copy()
 

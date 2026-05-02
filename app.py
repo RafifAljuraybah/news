@@ -149,11 +149,21 @@ with tab1:
         time_dist['Total Coverage'] = time_dist.sum(axis=1)
         
         events = [
-            ("Climate Emergency", "2019-05-01"), ("Net Zero Law", "2019-06-27"),
-            ("10 Point Plan", "2020-11-18"), ("Energy Crisis", "2021-09-01"),
-            ("Net Zero Strategy", "2021-10-19"), ("Energy Security", "2022-04-07"),
-            ("GB Energy Bill", "2024-07-25"), ("Clean Power 2030", "2025-04-10")
-        ]
+                ("Climate Emergency Declared", "2019-05-01"),
+                ("UK Net Zero 2050 Law Passed", "2019-06-27"),
+                ("10 Point Plan Launch", "2020-11-18"),
+                ("Green Homes Grant Scrapped", "2021-03-03"),
+                ("Energy Crisis Starts", "2021-09-01"),
+                ("Net Zero Strategy & COP26", "2021-10-19"),
+                ("Energy Security Strategy", "2022-04-07"),
+                ("Energy Price Guarantee", "2022-09-08"),
+                ("Whitehaven Coal Mine Approved", "2022-12-07"),
+                ("Powering Up Britain Strategy", "2023-03-30"),
+                ("Net Zero Rollbacks", "2023-09-20"),
+                ("GB Energy Bill Introduction", "2024-07-25"),
+                ("COP29 & 81% Emission Target", "2024-11-12"),
+                ("Clean Power 2030 Plan", "2025-04-10")
+            ]
         
         # Melt dataframe for Plotly Express
         time_dist_melted = time_dist.reset_index().melt(id_vars='published_date', var_name='Outlet', value_name='Count')

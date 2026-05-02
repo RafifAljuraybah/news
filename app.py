@@ -41,12 +41,7 @@ st.markdown("""
 
 st.title("UK Renewable Energy & Policy News Explorer")
 st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Articles Analyzed", "1,097")
-col2.metric("Renewables (41.9%) vs. Policy (13.6%)", "Positive Sentiment")
-col3.metric("Renewables (9.3%) vs. Policy (33.0%)", "Negative Sentiment")
-
+st.columns(1).metric("Total Articles Analyzed", "1,097")
 st.divider()
 
 COLORS = {
@@ -61,12 +56,26 @@ SENTIMENT_COLORS = {
     'Neutral':  '#e0e0e0',
     'Positive': '#a5d6a7',
 }
+events = [("Climate Emergency Declared",      "2019-05-01"),
+("UK Net Zero 2050 Law Passed",      "2019-06-27"),
+("10 Point Plan Launch",             "2020-11-18"),
+("Green Homes Grant Scrapped",       "2021-03-03"),
+("Energy Crisis Starts",             "2021-09-01"),
+("Net Zero Strategy & COP26",        "2021-10-19"),
+("Energy Security Strategy",         "2022-04-07"),
+("Energy Price Guarantee",           "2022-09-08"),
+("Whitehaven Coal Mine Approved",    "2022-12-07"),
+("Powering Up Britain Strategy",     "2023-03-30"),
+("Net Zero Rollbacks",               "2023-09-20"),
+("GB Energy Bill Introduction",      "2024-07-25"),
+("COP29 & 81% Emission Target",      "2024-11-12"),
+("Clean Power 2030 Plan",            "2025-04-10"),]
 custom_stopwords  = ["said", "says", "bbc", "guardian", "uk", "will"]
 
 NUM_POLICY_KEYWORDS = 72
 NUM_TECH_KEYWORDS   = 89
 
-# ── 2. Load Data & Models ─────────────────────────────────────────────────────
+#2. load data & models
 @st.cache_resource
 def load_topic_model():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -94,10 +103,10 @@ topic_model  = load_topic_model()
 articles_df  = load_articles()
 sentiment_df = load_sentiment()
 
-# ── 3. Sidebar Filters ────────────────────────────────────────────────────────
+#3. sidebar filters
 st.sidebar.header("Filter the Data")
 
-# — Outlet —
+#3.1 outlet
 all_outlets = sorted(articles_df['outlet'].dropna().unique().tolist())
 selected_outlet = st.sidebar.multiselect(
     "News Outlet:",
@@ -106,7 +115,7 @@ selected_outlet = st.sidebar.multiselect(
     help="Filter articles by publisher."
 )
 
-# — Date Range —
+#3.2. date range
 min_date = articles_df['published_date'].min().date()
 max_date = articles_df['published_date'].max().date()
 date_range = st.sidebar.date_input(
@@ -121,7 +130,7 @@ if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
 else:
     start_date, end_date = pd.Timestamp(min_date), pd.Timestamp(max_date)
 
-# — Topic —
+#3.3 topic
 all_topics = sorted(
     articles_df['Topic_Label'].dropna().unique().tolist(),
     key=lambda lbl: articles_df.loc[articles_df['Topic_Label'] == lbl, 'Topic'].min()
@@ -133,7 +142,7 @@ selected_topics = st.sidebar.multiselect(
     help="Show only articles assigned to these topics. Topic -1 = outliers."
 )
 
-# — Aspect Category (for Sentiment tab) —
+#3.4. aspect category (for sentiment tab)
 all_aspects = sorted(sentiment_df['aspect_category'].dropna().unique().tolist())
 selected_aspects = st.sidebar.multiselect(
     "Aspect Categories (Sentiment):",
@@ -142,7 +151,7 @@ selected_aspects = st.sidebar.multiselect(
     help="Filter sentiment charts by the aspect (Policy / Renewables / etc.)."
 )
 
-# — Sentiment —
+#3.5. sentiment
 all_sentiments = ['Positive', 'Neutral', 'Negative']
 selected_sentiments = st.sidebar.multiselect(
     "Sentiment Labels:",
@@ -159,7 +168,7 @@ st.sidebar.caption(
     "and to compute **keyword densities**."
 )
 
-# ── Apply Filters ─────────────────────────────────────────────────────────────
+#apply filters
 filtered_articles = articles_df[
     articles_df['outlet'].isin(selected_outlet) &
     articles_df['published_date'].between(start_date, end_date) &
@@ -173,12 +182,12 @@ filtered_sentiment = sentiment_df[
     sentiment_df['sentiment'].isin(selected_sentiments)
 ].copy()
 
-# ── 4. Tabs ───────────────────────────────────────────────────────────────────
+#4. Tabs
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 EDA & Coverage",
-    "🧩 Topic Modelling",
-    "💬 Sentiment Analysis",
-    "📰 Article Reader",
+    "EDA & Coverage",
+    "Topic Modelling",
+    "Sentiment Analysis",
+    "Article Reader",
 ])
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -261,23 +270,6 @@ with tab1:
 
     if not time_dist.empty:
         time_dist['Total Coverage'] = time_dist.sum(axis=1)
-
-        events = [
-            ("Climate Emergency Declared",      "2019-05-01"),
-            ("UK Net Zero 2050 Law Passed",      "2019-06-27"),
-            ("10 Point Plan Launch",             "2020-11-18"),
-            ("Green Homes Grant Scrapped",       "2021-03-03"),
-            ("Energy Crisis Starts",             "2021-09-01"),
-            ("Net Zero Strategy & COP26",        "2021-10-19"),
-            ("Energy Security Strategy",         "2022-04-07"),
-            ("Energy Price Guarantee",           "2022-09-08"),
-            ("Whitehaven Coal Mine Approved",    "2022-12-07"),
-            ("Powering Up Britain Strategy",     "2023-03-30"),
-            ("Net Zero Rollbacks",               "2023-09-20"),
-            ("GB Energy Bill Introduction",      "2024-07-25"),
-            ("COP29 & 81% Emission Target",      "2024-11-12"),
-            ("Clean Power 2030 Plan",            "2025-04-10"),
-        ]
 
         time_dist_melted = time_dist.reset_index().melt(
             id_vars='published_date', var_name='Outlet', value_name='Count')

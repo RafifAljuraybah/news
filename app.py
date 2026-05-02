@@ -9,14 +9,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# ── 1. Page Configuration ────────────────────────────────────────────────────
+#1. page config
 st.set_page_config(
     page_title="UK Energy Policy Explorer",
     layout="wide",
     page_icon="🇬🇧"
 )
-
-# Custom CSS — cleaner cards, consistent typography
 st.markdown("""
 <style>
     [data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: 700; }
@@ -41,17 +39,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🇬🇧 UK Renewable Energy & Policy News Explorer")
-st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2019–2025).")
+st.title("UK Renewable Energy & Policy News Explorer")
+st.markdown("Explore how the **BBC** and **The Guardian** cover renewable energy policy (2017–2025).")
+
+# Add a toggle for the user to choose the comparison view
+comparison_view = st.radio(
+    "Select Metric View:",
+    ["Compare Positive Sentiment", "Compare Negative Sentiment", "Mixed View (Original)"],
+    horizontal=True
+)
 
 col1, col2, col3 = st.columns(3)
-col1.metric("Total Articles Analysed", "1,097")
-col2.metric("Positive Sentiment (Renewables)", "41.9%")
-col3.metric("Negative Sentiment (Policy)", "33.0%")
+col1.metric("Total Articles Analyzed", "1,097")
+
+if comparison_view == "Compare Positive Sentiment":
+    col2.metric("Positive Sentiment (Renewables)", "41.9%")
+    col3.metric("Positive Sentiment (Policy)", "13.6%")
+
+elif comparison_view == "Compare Negative Sentiment":
+    col2.metric("Negative Sentiment (Renewables)", "9.3%")
+    col3.metric("Negative Sentiment (Policy)", "33.0%")
+
+else: # The original mixed view
+    col2.metric("Positive Sentiment (Renewables)", "41.9%")
+    col3.metric("Negative Sentiment (Policy)", "33.0%")
 
 st.divider()
 
-# ── Dictionaries ──────────────────────────────────────────────────────────────
 COLORS = {
     'The Guardian': '#052962',
     'BBC': '#B80000',
@@ -64,7 +78,7 @@ SENTIMENT_COLORS = {
     'Neutral':  '#e0e0e0',
     'Positive': '#a5d6a7',
 }
-custom_stopwords = ['the', 'and', 'to', 'of', 'a']
+custom_stops = ["said", "says", "bbc", "guardian", "uk", "will"]
 
 NUM_POLICY_KEYWORDS = 72
 NUM_TECH_KEYWORDS   = 89

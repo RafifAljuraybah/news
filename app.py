@@ -636,7 +636,7 @@ most charts to keep things clean.
 """, unsafe_allow_html=True)
 
     # ── What is keyword density? ──────────────────────────────────────────────
-    with st.expander("📐 What does 'keyword density' mean?"):
+    with st.expander("What does keyword density mean?"):
         st.markdown(f"""
 <div class="method-box">
 Keyword density measures how much an article (or a group of articles) focuses on a

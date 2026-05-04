@@ -122,7 +122,7 @@ st.markdown(
 st.divider()
 
 # ── 5. SIDEBAR FILTERS ────────────────────────────────────────────────────────
-st.sidebar.header("🔎 Filter the Data")
+st.sidebar.header("Filter the Data")
 
 all_outlets = sorted(articles_df["outlet"].dropna().unique().tolist())
 selected_outlet = st.sidebar.multiselect(
@@ -182,8 +182,8 @@ filtered_sentiment = sentiment_df[
 
 # ── 7. TABS ───────────────────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs([
-    "📊 Main Insights",
-    "🔬 Topics & Articles",
+    "Main Insights",
+    "Topics & Articles",
     "ℹ️ About & Methods",
 ])
 
@@ -198,7 +198,7 @@ with tab1:
     bbc_filtered      = len(filtered_articles[filtered_articles["outlet"] == "BBC"])
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("📰 Total Articles", f"{total_filtered:,}")
+    m1.metric("Total Articles", f"{total_filtered:,}")
     m2.metric("🔵 The Guardian",   f"{guardian_filtered:,}")
     m3.metric("🔴 BBC",            f"{bbc_filtered:,}")
     st.divider()
@@ -245,7 +245,7 @@ with tab1:
         )
         st.plotly_chart(fig_coverage, use_container_width=True)
 
-        with st.expander("📌 Events Key"):
+        with st.expander("Events Key"):
             for i, (label, date_str) in enumerate(EVENTS, 1):
                 st.markdown(f"**{i}.** {label} — *{date_str}*")
     else:
@@ -311,7 +311,7 @@ with tab1:
         fig_density.update_layout(
             xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
             yaxis_title="",
-            yaxis=dict(categoryorder="array", categoryarray=ordered_labels),
+            yaxis=dict(categoryorder="array", categoryarray=ordered_labels[::-1]),
         )
         st.plotly_chart(fig_density, use_container_width=True)
     else:
@@ -584,14 +584,14 @@ with tab2:
 # TAB 3 — ABOUT & METHODS
 # ════════════════════════════════════════════════════════════════════════════════
 with tab3:
-    st.header("ℹ️ About This Dashboard")
+    st.header("About This Dashboard")
     st.markdown(
         "This page answers the most common questions about how this dashboard works, "
         "what the numbers mean, and how to interpret the charts — no technical background needed."
     )
 
     # ── What is this project? ─────────────────────────────────────────────────
-    with st.expander("📌 What is this project about?", expanded=True):
+    with st.expander("What is this project about?", expanded=True):
         st.markdown("""
 <div class="faq-box">
 This dashboard analyses <b>1,097 news articles</b> published by the <b>BBC</b> and
@@ -611,7 +611,7 @@ The goal is to understand:
 """, unsafe_allow_html=True)
 
     # ── What is BERTopic? ─────────────────────────────────────────────────────
-    with st.expander("🤖 What is BERTopic and how were the topics found?"):
+    with st.expander("What is BERTopic and how were the topics found?"):
         st.markdown("""
 <div class="info-box">
 <b>BERTopic</b> is an AI-powered technique for grouping articles by theme —
@@ -696,7 +696,7 @@ specifically on news text.
 """, unsafe_allow_html=True)
 
     # ── How to read the sentiment gap chart ───────────────────────────────────
-    with st.expander("📊 How do I read the 'Sentiment Gap' chart?"):
+    with st.expander("How do I read the Sentiment Gap chart?"):
         st.markdown("""
 <div class="faq-box">
 The Sentiment Gap chart compares the share of <b>positive</b> and <b>negative</b>
@@ -737,13 +737,13 @@ reflect however many articles match your current filter combination.
 """, unsafe_allow_html=True)
 
     # ── Data sources ──────────────────────────────────────────────────────────
-    with st.expander("📚 Where does the data come from?"):
+    with st.expander("Where does the data come from?"):
         st.markdown("""
 <div class="faq-box">
 Articles were collected from two UK news outlets:
 <ul>
-  <li><b>The Guardian</b> — via the Guardian Open Platform API</li>
-  <li><b>BBC</b> — via web scraping of BBC News</li>
+  <li><b>The Guardian</b>The Guardian - open platform.  https://open-platform.theguardian.com/</li>
+  <li><b>BBC</b>RealTimeData. BBC News Alltime [Dataset]. In Hugging Face. https://huggingface.co/datasets/RealTimeData/bbc_news_alltime</li>
 </ul>
 
 <b>Date range:</b> January 2017 – April 2025<br><br>

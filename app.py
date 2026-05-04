@@ -368,7 +368,7 @@ with tab1:
             gap_val = re_pos - pol_pos
             direction = "more positively" if gap_val > 0 else "more negatively"
             st.info(
-                f"Across the filtered data, **Renewables** are framed **{abs(gap_val):.1f} percentage points "
+                f"Across the filtered data, **Renewables** are framed **{abs(gap_val):.1f}% "
                 f"{direction}** than **Policy** in terms of positive sentiment."
             )
     else:
@@ -665,7 +665,7 @@ relative to its length.
 """, unsafe_allow_html=True)
 
     # ── What is ABSA? ─────────────────────────────────────────────────────────
-    with st.expander("💬 What is Aspect-Based Sentiment Analysis (ABSA)?"):
+    with st.expander("What is Aspect-Based Sentiment Analysis (ABSA)?"):
         st.markdown("""
 <div class="info-box">
 Standard sentiment analysis gives a single score (positive / negative) to an
@@ -716,7 +716,7 @@ The summary sentence below the chart tells you the gap in percentage points at a
 """, unsafe_allow_html=True)
 
     # ── How to use the filters ─────────────────────────────────────────────────
-    with st.expander("🔧 How do the sidebar filters work?"):
+    with st.expander("How do the sidebar filters work?"):
         st.markdown("""
 <div class="faq-box">
 All filters on the left sidebar apply <b>simultaneously</b> across every chart and table
@@ -742,11 +742,11 @@ reflect however many articles match your current filter combination.
 <div class="faq-box">
 Articles were collected from two UK news outlets:
 <ul>
-  <li><b>The Guardian</b>The Guardian - open platform.  https://open-platform.theguardian.com/</li>
-  <li><b>BBC</b>RealTimeData. BBC News Alltime [Dataset]. In Hugging Face. https://huggingface.co/datasets/RealTimeData/bbc_news_alltime</li>
+  <li><b>The Guardian</b>: The Guardian - open platform.  https://open-platform.theguardian.com/</li>
+  <li><b>BBC</b>: RealTimeData. BBC News Alltime [Dataset]. In Hugging Face. https://huggingface.co/datasets/RealTimeData/bbc_news_alltime</li>
 </ul>
 
-<b>Date range:</b> January 2017 – April 2025<br><br>
+<b>Date range:</b> January 2017 – June 2025<br><br>
 
 <b>Filtering criteria:</b> Only articles containing at least <b>three terms</b> from
 both the policy keyword list and the renewable-energy keyword list were included.

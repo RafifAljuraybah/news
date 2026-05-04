@@ -444,24 +444,48 @@ with tab2:
             .sort_values("Topic", ascending=True)
         )
 
-        for _, row in topic_summary.iterrows():
-            topic_articles = non_outlier_t2[non_outlier_t2["Topic_Label"] == row["Topic_Label"]]
-            rep_titles = (
-                topic_articles
-                .sort_values("published_date", ascending=False)["title"]
-                .dropna()
-                .head(3)
-                .tolist()
+    for _, row in topic_summary.iterrows():
+        topic_articles = non_outlier_t2[non_outlier_t2["Topic_Label"] == row["Topic_Label"]]
+        topic_id = int(row["Topic"])
+    
+        # Get BERTopic's representative docs for this topic
+        if topic_model is not None:
+            try:
+                rep_docs = topic_model.get_representative_docs(topic_id)  # list of text strings
+            except Exception:
+                rep_docs = []
+        else:
+            rep_docs = []
+    
+        # Match representative texts back to dataframe rows
+        if rep_docs:
+            rep_articles = (
+                topic_articles[topic_articles["clean_text"].isin(rep_docs)]
+                .drop_duplicates(subset="clean_text")
             )
-
-            with st.expander(
-                f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
-            ):
-                st.markdown("**Sample article titles:**")
-                for t in rep_titles:
-                    st.markdown(f"- {t}")
-    else:
-        st.info("No topic data available for the selected filters.")
+            # Preserve the order BERTopic returned them in
+            rep_articles = rep_articles.set_index("clean_text").reindex(
+                [d for d in rep_docs if d in rep_articles["clean_text"].values]
+            ).reset_index()
+        else:
+            # Fallback to 3 most recent if model unavailable
+            rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
+    
+        with st.expander(
+            f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
+        ):
+            if not rep_articles.empty:
+                st.markdown("**Representative articles (BERTopic):**")
+                for _, art in rep_articles.iterrows():
+                    title   = art["title"] if pd.notna(art.get("title")) else "Untitled"
+                    date    = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
+                    outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
+                    text    = art["clean_text"] if pd.notna(art.get("clean_text")) else ""
+    
+                    with st.expander(f"{title}, *{outlet}, {date}*"):
+                        st.write(text)
+            else:
+                st.info("No representative articles could be matched for this topic.")
 
     st.divider()
 

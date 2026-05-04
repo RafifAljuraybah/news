@@ -166,7 +166,7 @@ st.sidebar.caption(
     f"{NUM_TECH_KEYWORDS} renewable-energy keywords"
 )
 
-# Apply filters (topics not filtered at sidebar level — use Tab 2 to explore by topic)
+# Apply filters (topics not filtered at sidebar level, use Tab 2 to explore by topic)
 all_topics = sorted(
     articles_df["Topic_Label"].dropna().unique().tolist(),
     key=lambda lbl: articles_df.loc[articles_df["Topic_Label"] == lbl, "Topic"].min(),
@@ -284,7 +284,7 @@ with tab1:
     # Policy vs RE keyword density by topic
     st.subheader("Policy vs Renewable-Energy Keyword Density by Topic")
     st.caption(
-        "Mean adjusted keyword density per topic — how heavily each topic leans "
+        "Mean adjusted keyword density per topic, how heavily each topic leans "
         "on policy language vs renewable-energy technology language."
     )
 
@@ -378,7 +378,7 @@ with tab1:
 
     # Sentiment trend over time
     st.subheader("Sentiment Trend Over Time (Policy vs Renewables)")
-    st.caption("Quarterly share of positive, neutral, and negative sentences — stacked by aspect.")
+    st.caption("Quarterly share of positive, neutral, and negative sentences, stacked by aspect.")
 
     order = ["Negative", "Neutral", "Positive"]
     aspects_in_data = filtered_sentiment["aspect_category"].dropna().unique()
@@ -576,7 +576,7 @@ with tab3:
     st.header("About This Dashboard")
     st.markdown(
         "This page answers the most common questions about how this dashboard works, "
-        "what the numbers mean, and how to interpret the charts — no technical background needed."
+        "what the numbers mean, and how to interpret the charts."
     )
 
     with st.expander("What is this project about?", expanded=True):
@@ -606,17 +606,17 @@ think of it as a very sophisticated sorting machine.<br><br>
 
 Here's how it works in plain English:
 <ol>
-  <li><b>Reading the articles</b> — Each article is converted into a list of numbers that
+  <li><b>Reading the articles</b>, Each article is converted into a list of numbers that
       capture its meaning (using a language model called BERT). Similar articles end up
       with similar numbers.</li>
-  <li><b>Finding clusters</b> — Articles that are mathematically "close" to each other
+  <li><b>Finding clusters</b>, Articles that are mathematically "close" to each other
       are grouped together into topics automatically. No one tells the model how many topics
-      to find — it discovers this on its own.</li>
-  <li><b>Labelling the topics</b> — Once clusters are found, the most representative
+      to find, it discovers this on its own.</li>
+  <li><b>Labelling the topics</b>, Once clusters are found, the most representative
       keywords and articles are examined and a human-readable label is assigned to each topic.</li>
 </ol>
 
-<b>Topic -1 (Outliers)</b> — Some articles don't fit neatly into any cluster and are
+<b>Topic -1 (Outliers)</b>, Some articles don't fit neatly into any cluster and are
 placed in a catch-all "outlier" group labelled Topic -1. These are excluded from
 most charts to keep things clean.
 </div>
@@ -626,13 +626,13 @@ most charts to keep things clean.
         st.markdown(f"""
 <div class="method-box">
 Keyword density measures how much an article (or a group of articles) focuses on a
-particular theme — specifically, <b>policy language</b> or <b>renewable-energy technology language</b>.<br><br>
+particular theme, specifically, <b>policy language</b> or <b>renewable-energy technology language</b>.<br><br>
 
 Two curated keyword lists underpin the analysis:
 <ul>
-  <li><b>Policy keywords</b> ({NUM_POLICY_KEYWORDS} terms) — words like
+  <li><b>Policy keywords</b> ({NUM_POLICY_KEYWORDS} terms), words like
       <em>net zero, legislation, subsidy, planning permission, government target</em></li>
-  <li><b>Renewable-energy keywords</b> ({NUM_TECH_KEYWORDS} terms) — words like
+  <li><b>Renewable-energy keywords</b> ({NUM_TECH_KEYWORDS} terms), words like
       <em>solar panels, offshore wind, heat pump, battery storage, hydrogen</em></li>
 </ul>
 
@@ -661,9 +661,9 @@ Standard sentiment analysis gives a single score (positive / negative) to an
 
 In this project, two <b>aspects</b> are tracked in every sentence:
 <ul>
-  <li><b>Policy</b> — sentences about government action, legislation, subsidies,
+  <li><b>Policy</b>, sentences about government action, legislation, subsidies,
       targets, planning rules, etc.</li>
-  <li><b>Renewables</b> — sentences about solar, wind, heat pumps, hydrogen,
+  <li><b>Renewables</b>, sentences about solar, wind, heat pumps, hydrogen,
       battery storage, etc.</li>
 </ul>
 
@@ -705,11 +705,11 @@ All filters on the left sidebar apply <b>simultaneously</b> across every chart a
 in the dashboard (except where noted).<br><br>
 
 <ul>
-  <li><b>News Outlet</b> — Include only BBC articles, only Guardian articles, or both.</li>
-  <li><b>Publication Date Range</b> — Zoom into a specific time window (e.g. 2021 to 2022
+  <li><b>News Outlet</b>, Include only BBC articles, only Guardian articles, or both.</li>
+  <li><b>Publication Date Range</b>, Zoom into a specific time window (e.g. 2021 to 2022
       during the energy crisis).</li>
-  <li><b>Aspect</b> — Restrict sentiment charts to Policy, Renewables, or both.</li>
-  <li><b>Sentiment</b> — Show only positive, only negative, or all three classes.</li>
+  <li><b>Aspect</b>, Restrict sentiment charts to Policy, Renewables, or both.</li>
+  <li><b>Sentiment</b>, Show only positive, only negative, or all three classes.</li>
 </ul>
 
 To explore articles by topic, use the <b>Topics & Articles</b> tab.

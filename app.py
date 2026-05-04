@@ -430,7 +430,7 @@ with tab2:
     st.header("Topic Overview")
     st.caption(
         "Each topic was discovered automatically by BERTopic. The representative "
-        "article titles below give a flavour of what each cluster is about."
+        "articles below give a flavour of what each cluster is about."
     )
 
     non_outlier_t2 = filtered_articles[filtered_articles["Topic"] != -1].copy()

@@ -504,10 +504,11 @@ with tab2:
                 article_data = topic_df[topic_df["title"] == selected_title].iloc[0]
 
                 st.markdown(f"### {article_data['title']}")
-                meta_cols = st.columns(3)
+                meta_cols = st.columns(4)
                 meta_cols[0].metric("Outlet",    article_data["outlet"])
                 meta_cols[1].metric("Published", str(article_data["published_date"].date()))
                 meta_cols[2].metric("Topic",     article_data["Topic_Label"])
+                meta_cols[3].metric("Word Count",     str(article_data["word_count"]))
 
                 density_cols = st.columns(2)
                 density_cols[0].metric(

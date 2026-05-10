@@ -191,7 +191,7 @@ tab1, tab2, tab3 = st.tabs([
     "ℹ️ About & Methods",
 ])
 
-# TAB 1 — MAIN INSIGHTS
+#tab 1
 with tab1:
 
     total_filtered    = len(filtered_articles)
@@ -424,7 +424,7 @@ with tab1:
         st.info("No sentiment data available for the selected filters.")
 
 
-# TAB 2 — TOPICS & ARTICLES
+#tab 2
 with tab2:
 
     st.header("Topic Overview")
@@ -595,7 +595,7 @@ with tab2:
         st.info("No topic data available for the selected filters.")
 
 
-# TAB 3 — ABOUT & METHODS
+#tab 3
 with tab3:
     st.header("About This Dashboard")
     st.markdown(

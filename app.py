@@ -64,7 +64,43 @@ st.markdown("""
     .top-topic-rank { font-size: 1.3rem; }
     .top-topic-label { font-weight: 600; flex: 1; }
     .top-topic-count { color: #555; font-size: 0.88rem; white-space: nowrap; }
+        .copyright-box {
+        background: #fff3e0;
+        border-left: 4px solid #e65100;
+        border-radius: 6px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+        line-height: 1.7;
+    }
+    .disclaimer-box {
+        background: #fce4ec;
+        border-left: 4px solid #c62828;
+        border-radius: 6px;
+        padding: 1rem 1.2rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+        line-height: 1.7;
+    }
 </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="copyright-box">
+<b>Copyright & Data Notice</b><br>
+Article titles and individual sentences displayed in this dashboard are sourced from
+<b>BBC News</b> and <b>The Guardian</b> and remain the intellectual property of their
+respective publishers. This content is reproduced solely for <b>non-commercial academic
+research purposes</b> under fair-dealing principles.<br><br>
+<b>Sources:</b><br>
+• <b>The Guardian</b> — content accessed via the
+  <a href="https://open-platform.theguardian.com/" target="_blank">Guardian Open Platform</a>.
+  © Guardian News &amp; Media Ltd.<br>
+• <b>BBC News</b> — content sourced from
+  <a href="https://huggingface.co/datasets/RealTimeData/bbc_news_alltime" target="_blank">
+  RealTimeData / bbc_news_alltime</a> (Hugging Face). © BBC.<br><br>
+</div>
 """, unsafe_allow_html=True)
 
 COLORS = {
@@ -98,7 +134,7 @@ EVENTS = [
     ("COP29 & 81% Emission Target",      "2024-11-12"),
     ("Clean Power 2030 Plan",            "2025-04-10"),
 ]
-
+OUTLET_HOMEPAGES = {"BBC":          "https://www.bbc.co.uk/news", "The Guardian": "https://www.theguardian.com"}
 @st.cache_resource
 def load_topic_model():
     base_dir   = os.path.dirname(os.path.abspath(__file__))
@@ -114,7 +150,10 @@ def load_articles():
     df["adj_policy_density"]    = df["policy_density"]   / NUM_POLICY_KEYWORDS
     df["adj_renewable_density"] = df["renewable_density"] / NUM_TECH_KEYWORDS
     return df
-
+def _row_url(row):
+    if "url" in row.index and pd.notna(row["url"]) and str(row["url"]).startswith("http"):
+        return str(row["url"])
+    return OUTLET_HOMEPAGES.get(row.get("outlet", ""), "#")
 @st.cache_data
 def load_sentiment():
     df = pd.read_csv("sentiment_lite.csv", encoding="utf-8-sig")
@@ -432,6 +471,18 @@ with tab2:
         "Each topic was discovered automatically by BERTopic. The representative "
         "articles below give a flavour of what each cluster is about."
     )
+    st.markdown("""
+<div class="copyright-box">
+<b>Content Attribution</b><br>
+Article titles and sentiment sentences shown in this tab are excerpted from content
+published by <b>BBC News</b> (© BBC) and <b>The Guardian</b>
+(© Guardian News &amp; Media Ltd). They are reproduced here in brief for
+<b>non-commercial academic research</b> purposes only. Full articles should be
+accessed via the original publishers:
+<a href="https://www.bbc.co.uk/news" target="_blank">bbc.co.uk/news</a> and
+<a href="https://www.theguardian.com" target="_blank">theguardian.com</a>.
+</div>
+""", unsafe_allow_html=True)
 
     non_outlier_t2 = filtered_articles[filtered_articles["Topic"] != -1].copy()
 
@@ -468,9 +519,7 @@ with tab2:
                 [d for d in rep_docs if d in rep_articles["clean_text"].values]
             ).reset_index()
         else:
-            # Fallback to 3 most recent if model unavailable
             rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
-    
         with st.expander(
             f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
         ):
@@ -480,117 +529,106 @@ with tab2:
                     title   = art["title"] if pd.notna(art.get("title")) else "Untitled"
                     date    = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
                     outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
-                    text    = art["clean_text"] if pd.notna(art.get("clean_text")) else ""
-    
-                    with st.expander(f"{title}, *{outlet}, {date}*"):
-                        st.write(text)
-            else:
-                st.info("No representative articles could be matched for this topic.")
+                    url    = OUTLET_HOMEPAGES.get(outlet, "#")
+                        # Clickable title linking to the article (or outlet homepage)
+                        st.markdown(
+                            f'- [*{title}*]({url}){{target="_blank"}} — **{outlet}**, {date}',
+                            unsafe_allow_html=True)
+                    st.caption(
+                        f"Titles © their respective publishers (BBC / The Guardian). "
+                        f"Reproduced for non-commercial research purposes only.")
+                else:
+                    st.info("No representative articles could be matched for this topic.")
+                    
+    else:
+        st.info("No topic data available for the selected filters.")
 
     st.divider()
+    st.header("Aspect-Based Sentiment Explorer")
+    st.caption(
+        "Browse the individual sentences that underpin the sentiment analysis. "
+        "Filter by topic, outlet, aspect, and sentiment label. "
+        "**No full article text is reproduced here.**")
 
-    st.header("📰 Article Reader")
+    # Copyright notice for the sentence table
+    st.markdown("""
+<div class="disclaimer-box">
+<b>Disclaimer</b><br>
+The sentences below are <b>short extracts</b> (typically one sentence) from articles
+published by <b>BBC News</b> and <b>The Guardian</b>. They are displayed solely to
+illustrate the sentiment classification model's output for academic purposes.
+These extracts do <b>not</b> constitute a reproduction of the full journalistic work
+and should not be redistributed. All intellectual property rights remain with the
+original publishers.
+</div>
+""", unsafe_allow_html=True)
 
     available_topics_t2 = sorted(
         non_outlier_t2["Topic_Label"].dropna().unique().tolist(),
         key=lambda lbl: filtered_articles.loc[
-            filtered_articles["Topic_Label"] == lbl, "Topic"
-        ].min(),
-    )
+            filtered_articles["Topic_Label"] == lbl, "Topic"].min())
 
     if len(available_topics_t2) > 0:
-        col_r1, col_r2 = st.columns([1, 2])
+        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
 
-        with col_r1:
-            selected_topic_t2 = st.selectbox(
-                "1. Filter by Topic:", available_topics_t2, key="reader_topic"
-            )
-            topic_df = filtered_articles[
-                filtered_articles["Topic_Label"] == selected_topic_t2
-            ].copy()
+        with col_f1:
+            sel_topic_sent = st.selectbox("Filter by Topic:", ["All"] + available_topics_t2, key="sent_topic")
+        with col_f2:
+            sel_outlet_sent = st.selectbox(
+                "Filter by Outlet:", ["All"] + sorted(filtered_articles["outlet"].dropna().unique().tolist()),
+                key="sent_outlet")
+        with col_f3:
+            sel_aspect_sent = st.selectbox(
+                "Filter by Aspect:",
+                ["All"] + sorted(sentiment_df["aspect_category"].dropna().unique().tolist()),
+                key="sent_aspect")
+        with col_f4:
+            sel_sentiment_sent = st.selectbox(
+                "Filter by Sentiment:",
+                ["All", "Positive", "Neutral", "Negative"],
+                key="sent_sentiment")
+        # Build filtered sentence table
+        sent_display = filtered_sentiment.copy()
+        if sel_topic_sent != "All":
+            titles_in_topic = filtered_articles.loc[
+                filtered_articles["Topic_Label"] == sel_topic_sent, "title"
+            ].dropna().unique().tolist()
+            sent_display = sent_display[sent_display["title"].isin(titles_in_topic)]
+        if sel_outlet_sent != "All":
+            sent_display = sent_display[sent_display["outlet"] == sel_outlet_sent]
+        if sel_aspect_sent != "All":
+            sent_display = sent_display[sent_display["aspect_category"] == sel_aspect_sent]
+        if sel_sentiment_sent != "All":
+            sent_display = sent_display[sent_display["sentiment"] == sel_sentiment_sent]
+        st.markdown(f"**{len(sent_display):,} sentences** match the current filters.")
+        if not sent_display.empty:
+            # Build a URL column for the sentence table: use article URL if available,
+            # otherwise fall back to the outlet homepage.
+            sent_display = sent_display.copy()
+            sent_display["_url"] = sent_display.apply(_row_url, axis=1)
 
-            outlet_filter_reader = st.selectbox(
-                "2. Filter by Outlet:",
-                ["All"] + sorted(topic_df["outlet"].dropna().unique().tolist()),
-                key="reader_outlet",
-            )
-            if outlet_filter_reader != "All":
-                topic_df = topic_df[topic_df["outlet"] == outlet_filter_reader]
+            # Build clickable HTML title
+            sent_display["Article Title"] = sent_display.apply(
+                lambda r: f'<a href="{r["_url"]}" target="_blank">{r["title"]}</a>'
+                if pd.notna(r.get("title")) else "Untitled",
+                axis=1)
 
-            topic_df_sorted = topic_df.sort_values("published_date", ascending=False)
-            title_options   = topic_df_sorted["title"].dropna().tolist()
-            selected_title  = st.selectbox(
-                "3. Choose an Article:", title_options, key="reader_title"
-            )
-
-        with col_r2:
-            if selected_title:
-                article_data = topic_df[topic_df["title"] == selected_title].iloc[0]
-
-                st.markdown(f"### {article_data['title']}")
-                meta_cols = st.columns(4)
-                meta_cols[0].metric("Outlet",    article_data["outlet"])
-                meta_cols[1].metric("Published", str(article_data["published_date"].date()))
-                meta_cols[2].metric("Topic",     article_data["Topic_Label"])
-                meta_cols[3].metric("Word Count",     str(article_data["word_count"]))
-
-                density_cols = st.columns(2)
-                density_cols[0].metric(
-                    "Policy Density",
-                    f"{article_data['adj_policy_density']:.3f}",
-                    help=f"Hits per 1k words / {NUM_POLICY_KEYWORDS} policy keywords",
-                )
-                density_cols[1].metric(
-                    "Renewables Density",
-                    f"{article_data['adj_renewable_density']:.3f}",
-                    help=f"Hits per 1k words / {NUM_TECH_KEYWORDS} renewable keywords",
-                )
-
-                with st.expander("📄 Full Article Text", expanded=True):
-                    st.write(article_data["clean_text"])
-
-        if selected_title:
-            st.divider()
-            st.subheader("Aspect-Based Sentiment for This Article")
-
-            article_sentiments = sentiment_df[sentiment_df["title"] == selected_title].copy()
-
-            if not article_sentiments.empty:
-                counts_art = article_sentiments["sentiment"].value_counts()
-                total_art  = counts_art.sum()
-                bar_cols   = st.columns(3)
-                for i, s in enumerate(["Positive", "Neutral", "Negative"]):
-                    n   = counts_art.get(s, 0)
-                    pct = n / total_art * 100
-                    bar_cols[i].metric(s, f"{n} ({pct:.0f}%)")
-
-                aspects_in_article = sorted(
-                    article_sentiments["aspect_category"].dropna().unique().tolist()
-                )
-                sel_aspect_reader = st.selectbox(
-                    "Filter by Aspect:",
-                    ["All"] + aspects_in_article,
-                    key="reader_aspect_filter",
-                )
-                if sel_aspect_reader != "All":
-                    article_sentiments = article_sentiments[
-                        article_sentiments["aspect_category"] == sel_aspect_reader
-                    ]
-
-                st.dataframe(
-                    article_sentiments[[
-                        "aspect_category", "target_term", "sentiment", "sentence"
-                    ]].rename(columns={
-                        "aspect_category": "Aspect",
-                        "target_term":     "Target Term",
-                        "sentiment":       "Sentiment",
-                        "sentence":        "Sentence",
-                    }).reset_index(drop=True),
-                    use_container_width=True,
-                    height=400,
-                )
-            else:
-                st.info("No sentence-level sentiment data available for this article.")
+            table_df = sent_display[[
+                "Article Title", "outlet", "published_date",
+                "aspect_category", "target_term", "sentiment", "sentence",
+            ]].rename(columns={
+                "outlet":           "Outlet",
+                "published_date":   "Date",
+                "aspect_category":  "Aspect",
+                "target_term":      "Target Term",
+                "sentiment":        "Sentiment",
+                "sentence":         "Sentence",
+            }).reset_index(drop=True)
+            st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            st.caption(
+                "Article titles and sentences © BBC / The Guardian.")
+        else:
+            st.info("No sentences match the current filters.")
     else:
         st.info("No topic data available for the selected filters.")
 
@@ -722,34 +760,32 @@ The summary sentence below the chart tells you the gap in percentage points at a
 </div>
 """, unsafe_allow_html=True)
 
-    with st.expander("How do the sidebar filters work?"):
-        st.markdown("""
-<div class="faq-box">
-All filters on the left sidebar apply <b>simultaneously</b> across every chart and table
-in the dashboard (except where noted).<br><br>
-
-<ul>
-  <li><b>News Outlet</b>, Include only BBC articles, only Guardian articles, or both.</li>
-  <li><b>Publication Date Range</b>, Zoom into a specific time window (e.g. 2021 to 2022
-      during the energy crisis).</li>
-  <li><b>Aspect</b>, Restrict sentiment charts to Policy, Renewables, or both.</li>
-  <li><b>Sentiment</b>, Show only positive, only negative, or all three classes.</li>
-</ul>
-
-To explore articles by topic, use the <b>Topics & Articles</b> tab.
-The <b>Total Articles</b> counter at the top of the Main Insights tab updates live to
-reflect however many articles match your current filter combination.
-</div>
-""", unsafe_allow_html=True)
-
     with st.expander("Where does the data come from?"):
         st.markdown("""
 <div class="faq-box">
 Articles were collected from two UK news outlets:
-<ul>
-  <li><b>The Guardian</b>: The Guardian open platform. https://open-platform.theguardian.com/</li>
-  <li><b>BBC</b>: RealTimeData. BBC News Alltime [Dataset]. In Hugging Face. https://huggingface.co/datasets/RealTimeData/bbc_news_alltime</li>
-</ul>
+
+<b>The Guardian</b><br>
+Articles accessed via the Guardian Open Platform API.<br>
+Guardian News &amp; Media Ltd. (2017–2025). <i>UK renewable energy and climate policy
+articles</i> [Dataset]. Retrieved from
+<a href="https://open-platform.theguardian.com/" target="_blank">
+https://open-platform.theguardian.com/</a>.<br>
+© Guardian News &amp; Media Ltd. All rights reserved.<br><br>
+
+<b>BBC News</b><br>
+RealTimeData. (n.d.). <i>BBC News Alltime</i> [Dataset]. Hugging Face.
+<a href="https://huggingface.co/datasets/RealTimeData/bbc_news_alltime" target="_blank">
+https://huggingface.co/datasets/RealTimeData/bbc_news_alltime</a>.<br>
+Original articles © BBC. All rights reserved.<br><br>
+
+<b>Copyright statement</b><br>
+This dashboard is an independent, non-commercial academic research project.
+Article titles and individual sentences are reproduced in brief to illustrate
+computational analysis results (topic modelling and aspect-based sentiment analysis).
+Full article text is <b>not</b> reproduced anywhere in this dashboard.
+Keyword density scores and sentiment labels are derived analytical outputs, not
+reproductions of original content.<br><br>
 
 <b>Date range:</b> January 2017 to June 2025<br><br>
 

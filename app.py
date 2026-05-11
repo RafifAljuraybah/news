@@ -94,10 +94,10 @@ Article titles and individual sentences displayed in this dashboard are sourced 
 respective publishers. This content is reproduced solely for <b>non-commercial academic
 research purposes</b> under fair-dealing principles.<br><br>
 <b>Sources:</b><br>
-• <b>The Guardian</b> — content accessed via the
+• <b>The Guardian</b> , content accessed via the
   <a href="https://open-platform.theguardian.com/" target="_blank">Guardian Open Platform</a>.
   © Guardian News &amp; Media Ltd.<br>
-• <b>BBC News</b> — content sourced from
+• <b>BBC News</b> , content sourced from
   <a href="https://huggingface.co/datasets/RealTimeData/bbc_news_alltime" target="_blank">
   RealTimeData / bbc_news_alltime</a> (Hugging Face). © BBC.<br><br>
 </div>
@@ -293,7 +293,7 @@ with tab1:
 
     st.divider()
 
-    # Top 3 topics by volume — vertical layout
+    # Top 3 topics by volume , vertical layout
     st.subheader("Top 3 Topics by Volume")
 
     non_outlier = filtered_articles[filtered_articles["Topic"] != -1]
@@ -531,7 +531,7 @@ accessed via the original publishers:
                     outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
                     url    = OUTLET_HOMEPAGES.get(outlet, "#")
                     st.markdown(
-                        f'- [*{title}*]({url}){{target="_blank"}} — **{outlet}**, {date}',
+                        f'- [*{title}*]({url}){{target="_blank"}} , **{outlet}**, {date}',
                         unsafe_allow_html=True)
                 st.caption(
                     f"Titles © their respective publishers (BBC / The Guardian). "
@@ -662,7 +662,7 @@ The goal is to understand:
     with st.expander("What is BERTopic and how were the topics found?"):
         st.markdown("""
 <div class="info-box">
-<b>BERTopic</b> is an AI-powered technique for grouping articles by theme —
+<b>BERTopic</b> is an AI-powered technique for grouping articles by theme,
 think of it as a very sophisticated sorting machine.<br><br>
 
 Here's how it works in plain English:

@@ -530,15 +530,14 @@ accessed via the original publishers:
                     date    = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
                     outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
                     url    = OUTLET_HOMEPAGES.get(outlet, "#")
-                        # Clickable title linking to the article (or outlet homepage)
-                        st.markdown(
-                            f'- [*{title}*]({url}){{target="_blank"}} — **{outlet}**, {date}',
-                            unsafe_allow_html=True)
-                    st.caption(
-                        f"Titles © their respective publishers (BBC / The Guardian). "
-                        f"Reproduced for non-commercial research purposes only.")
-                else:
-                    st.info("No representative articles could be matched for this topic.")
+                    st.markdown(
+                        f'- [*{title}*]({url}){{target="_blank"}} — **{outlet}**, {date}',
+                        unsafe_allow_html=True)
+                st.caption(
+                    f"Titles © their respective publishers (BBC / The Guardian). "
+                    f"Reproduced for non-commercial research purposes only.")
+            else:
+                st.info("No representative articles could be matched for this topic.")
                     
     else:
         st.info("No topic data available for the selected filters.")

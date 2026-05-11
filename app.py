@@ -190,8 +190,8 @@ else:
 
 all_aspects = sorted(sentiment_df["aspect_category"].dropna().unique().tolist())
 selected_aspects = st.sidebar.multiselect(
-    "Aspect (Sentiment):", options=all_aspects, default=all_aspects,
-    help="Filter sentiment charts by topic aspect.",
+    "Category (Sentiment):", options=all_aspects, default=all_aspects,
+    help="Filter sentiment charts by topic category.",
 )
 
 all_sentiments = ["Positive", "Neutral", "Negative"]
@@ -386,17 +386,17 @@ with tab1:
 
         aspects_present = gap_df.index.tolist()
         gap_summary = gap_df[["pct_positive", "pct_negative"]].reset_index()
-        gap_summary.columns = ["Aspect", "% Positive", "% Negative"]
+        gap_summary.columns = ["Category", "% Positive", "% Negative"]
         gap_summary_melted = gap_summary.melt(
-            id_vars="Aspect", var_name="Sentiment Type", value_name="Percentage"
+            id_vars="Category", var_name="Sentiment Type", value_name="Percentage"
         )
 
         color_map = {"% Positive": "#a5d6a7", "% Negative": "#ffb3b3"}
         fig_gap = px.bar(
-            gap_summary_melted, x="Aspect", y="Percentage",
+            gap_summary_melted, x="Category", y="Percentage",
             color="Sentiment Type", barmode="group",
             color_discrete_map=color_map,
-            title="% Positive vs % Negative Sentiment by Aspect",
+            title="% Positive vs % Negative Sentiment by Category",
         )
         fig_gap.update_layout(yaxis_title="% of Sentences", xaxis_title="")
         st.plotly_chart(fig_gap, use_container_width=True)
@@ -543,11 +543,10 @@ accessed via the original publishers:
         st.info("No topic data available for the selected filters.")
 
     st.divider()
-    st.header("Aspect-Based Sentiment Explorer")
+    st.header("Aspect-Based Sentiment Explorer by Category")
     st.caption(
         "Browse the individual sentences that underpin the sentiment analysis. "
-        "Filter by topic, outlet, aspect, and sentiment label. "
-        "**No full article text is reproduced here.**")
+        "Filter by topic, outlet, category, and sentiment label. ")
 
     # Copyright notice for the sentence table
     st.markdown("""
@@ -578,7 +577,7 @@ original publishers.
                 key="sent_outlet")
         with col_f3:
             sel_aspect_sent = st.selectbox(
-                "Filter by Aspect:",
+                "Filter by Category:",
                 ["All"] + sorted(sentiment_df["aspect_category"].dropna().unique().tolist()),
                 key="sent_aspect")
         with col_f4:
@@ -618,7 +617,7 @@ original publishers.
             ]].rename(columns={
                 "outlet":           "Outlet",
                 "published_date":   "Date",
-                "aspect_category":  "Aspect",
+                "aspect_category":  "Category",
                 "target_term":      "Target Term",
                 "sentiment":        "Sentiment",
                 "sentence":         "Sentence",

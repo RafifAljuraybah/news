@@ -600,35 +600,49 @@ original publishers.
             sent_display = sent_display[sent_display["sentiment"] == sel_sentiment_sent]
         st.markdown(f"**{len(sent_display):,} sentences** match the current filters.")
         if not sent_display.empty:
-            # Build a URL column for the sentence table: use article URL if available,
-            # otherwise fall back to the outlet homepage.
-            sent_display = sent_display.copy()
-            sent_display["_url"] = sent_display.apply(_row_url, axis=1)
+            # ── Article selector ──────────────────────────────────────────────
+            available_titles = (
+                sent_display
+                .dropna(subset=["title"])
+                .drop_duplicates(subset=["title"])
+                .sort_values("published_date", ascending=False)["title"]
+                .tolist())
+            st.markdown(
+                f"**{len(available_titles):,} articles** and "
+                f"**{len(sent_display):,} sentences** match the current filters. "
+                "Pick an article below to read its sentences.")
+            sel_article = st.selectbox(
+                "Select article:",
+                options=available_titles,
+                key="sent_article")
 
-            # Build clickable HTML title
-            sent_display["Article Title"] = sent_display.apply(
-                lambda r: f'<a href="{r["_url"]}" target="_blank">{r["title"]}</a>'
-                if pd.notna(r.get("title")) else "Untitled",
-                axis=1)
+            article_rows = sent_display[sent_display["title"] == sel_article].copy()
 
-            table_df = sent_display[[
-                "Article Title", "outlet", "published_date",
-                "aspect_category", "target_term", "sentiment", "sentence",
-            ]].rename(columns={
-                "outlet":           "Outlet",
-                "published_date":   "Date",
-                "aspect_category":  "Category",
-                "target_term":      "Target Term",
-                "sentiment":        "Sentiment",
-                "sentence":         "Sentence",
-            }).reset_index(drop=True)
-            st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-            st.caption(
-                "Article titles and sentences © BBC / The Guardian.")
+            if not article_rows.empty:
+                sample         = article_rows.iloc[0]
+                article_url    = _row_url(sample)
+                article_date   = str(sample["published_date"].date()) if pd.notna(sample.get("published_date")) else ""
+                article_outlet = sample["outlet"] if pd.notna(sample.get("outlet")) else ""
+
+                st.markdown(
+                    f'📰 **[{sel_article}]({article_url}){{target="_blank"}}**  '
+                    f'— {article_outlet}, {article_date}'
+                )
+                st.caption(f"{len(article_rows):,} sentence(s) from this article match your filters.")
+
+                table_df = article_rows[[
+                    "aspect_category", "target_term", "sentiment", "sentence",
+                ]].rename(columns={
+                    "aspect_category": "Category",
+                    "target_term":     "Target Term",
+                    "sentiment":       "Sentiment",
+                    "sentence":        "Sentence",
+                }).reset_index(drop=True)
+
+                st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+                st.caption("Article titles and sentences © BBC / The Guardian.")
         else:
             st.info("No sentences match the current filters.")
-    else:
-        st.info("No topic data available for the selected filters.")
 
 
 #tab 3

@@ -545,19 +545,6 @@ accessed via the original publishers:
         "Browse the individual sentences that underpin the sentiment analysis. "
         "Filter by topic, outlet, category, and sentiment label. ")
 
-    # Copyright notice for the sentence table
-    st.markdown("""
-<div class="disclaimer-box">
-<b>Disclaimer</b><br>
-The sentences below are <b>short extracts</b> (typically one sentence) from articles
-published by <b>BBC News</b> and <b>The Guardian</b>. They are displayed solely to
-illustrate the sentiment classification model's output for academic purposes.
-These extracts do <b>not</b> constitute a reproduction of the full journalistic work
-and should not be redistributed. All intellectual property rights remain with the
-original publishers.
-</div>
-""", unsafe_allow_html=True)
-
     available_topics_t2 = sorted(
         non_outlier_t2["Topic_Label"].dropna().unique().tolist(),
         key=lambda lbl: filtered_articles.loc[
@@ -604,10 +591,6 @@ original publishers.
                 .drop_duplicates(subset=["title"])
                 .sort_values("published_date", ascending=False)["title"]
                 .tolist())
-            st.markdown(
-                f"**{len(available_titles):,} articles** and "
-                f"**{len(sent_display):,} sentences** match the current filters. "
-                "Pick an article below to read its sentences.")
             sel_article = st.selectbox(
                 "Select article:",
                 options=available_titles,
@@ -620,11 +603,6 @@ original publishers.
                 article_url    = _row_url(sample)
                 article_date   = str(sample["published_date"].date()) if pd.notna(sample.get("published_date")) else ""
                 article_outlet = sample["outlet"] if pd.notna(sample.get("outlet")) else ""
-
-                st.markdown(
-                    f'📰 **[{sel_article}]({article_url}){{target="_blank"}}**  '
-                    f'— {article_outlet}, {article_date}'
-                )
                 st.caption(f"{len(article_rows):,} sentence(s) from this article match your filters.")
 
                 table_df = article_rows[[

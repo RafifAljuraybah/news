@@ -218,7 +218,7 @@ filtered_sentiment = sentiment_df[
 
 tab1, tab2, tab3 = st.tabs([
     "Main Insights",
-    "Topics & Articles",
+    "Topics & Sentiment",
     "ℹ️ About & Methods",
 ])
 

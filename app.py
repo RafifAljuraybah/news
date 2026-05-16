@@ -301,6 +301,118 @@ research purposes</b> under fair-dealing principles.<br><br>
 
     st.divider()
 
+    # Topic frequency over time — interactive, topic selector on the left
+    st.subheader("Topic Frequency Over Time")
+    st.caption(
+        "Monthly article count per topic. Toggle topics using the panel on the left. "
+        "The dashed grey line shows the total across all non-outlier topics (right axis)."
+    )
+
+    non_outlier_time = filtered_articles[filtered_articles["Topic"] != -1].copy()
+
+    if not non_outlier_time.empty:
+        topic_time = (
+            non_outlier_time
+            .groupby([pd.Grouper(key="published_date", freq="ME"), "Topic", "Topic_Label"])
+            .size()
+            .reset_index(name="Frequency")
+            .rename(columns={"published_date": "Timestamp"})
+        )
+
+        total_over_time = (
+            non_outlier_time
+            .groupby(pd.Grouper(key="published_date", freq="ME"))
+            .size()
+            .reset_index(name="Frequency")
+            .rename(columns={"published_date": "Timestamp"})
+        )
+
+        tl = (
+            topic_time[["Topic", "Topic_Label"]]
+            .drop_duplicates()
+            .sort_values("Topic")
+        )
+        tl["Short_Label"] = tl["Topic_Label"].str.replace(r"^\d+\.\s*", "", regex=True)
+
+        col_sel, col_chart = st.columns([1, 3])
+
+        with col_sel:
+            st.markdown("**Topics**")
+            btn_c1, btn_c2 = st.columns(2)
+            if btn_c1.button("All", key="tft_all"):
+                for tid in tl["Topic"].tolist():
+                    st.session_state[f"tft_{tid}"] = True
+            if btn_c2.button("Clear", key="tft_clear"):
+                for tid in tl["Topic"].tolist():
+                    st.session_state[f"tft_{tid}"] = False
+
+            selected_topics = []
+            for _, tr in tl.iterrows():
+                short = tr["Short_Label"]
+                display = short if len(short) <= 33 else short[:31] + "\u2026"
+                if st.checkbox(display, value=True, key=f"tft_{tr['Topic']}"):
+                    selected_topics.append(tr["Topic"])
+
+        with col_chart:
+            if selected_topics:
+                subset = topic_time[topic_time["Topic"].isin(selected_topics)]
+
+                fig_tft = go.Figure()
+
+                for _, tr in tl[tl["Topic"].isin(selected_topics)].iterrows():
+                    td = subset[subset["Topic"] == tr["Topic"]]
+                    fig_tft.add_trace(go.Scatter(
+                        x=td["Timestamp"],
+                        y=td["Frequency"],
+                        name=tr["Short_Label"],
+                        mode="lines",
+                        line=dict(width=2),
+                        hovertemplate="%{y} articles<extra>" + tr["Short_Label"] + "</extra>",
+                    ))
+
+                fig_tft.add_trace(go.Scatter(
+                    x=total_over_time["Timestamp"],
+                    y=total_over_time["Frequency"],
+                    name="Total (all topics)",
+                    mode="lines",
+                    line=dict(color="slategray", width=2, dash="dash"),
+                    yaxis="y2",
+                    hovertemplate="%{y} articles<extra>Total (all topics)</extra>",
+                ))
+
+                fig_tft.update_layout(
+                    xaxis_title="Date",
+                    yaxis=dict(title="Articles per Month", rangemode="nonnegative"),
+                    yaxis2=dict(
+                        title="Total Articles",
+                        overlaying="y",
+                        side="right",
+                        showgrid=False,
+                        rangemode="nonnegative",
+                        tickfont=dict(color="slategray"),
+                        title_font=dict(color="slategray"),
+                    ),
+                    hovermode="x unified",
+                    legend=dict(
+                        orientation="v",
+                        yanchor="top", y=1,
+                        xanchor="left", x=1.06,
+                        font=dict(size=11),
+                        bgcolor="rgba(255,255,255,0.85)",
+                        bordercolor="#dee2e6",
+                        borderwidth=1,
+                    ),
+                    margin=dict(r=20, t=10, b=40),
+                    height=520,
+                )
+                st.plotly_chart(fig_tft, use_container_width=True)
+            else:
+                st.info("Select at least one topic to display the chart.")
+    else:
+        st.info("No topic data available for the selected filters.")
+
+    st.divider()
+
     # Top 3 topics by volume
     st.subheader("Top 3 Topics by Volume")
 
@@ -362,7 +474,7 @@ research purposes</b> under fair-dealing principles.<br><br>
             title="Mean Adjusted Keyword Density by Topic",
         )
         fig_density.update_layout(
-            xaxis_title="Mean Adjusted Keyword Density (mentions per 1,000 words / list size)",
+            xaxis_title="Mean Adjusted Keyword Density (hits per 1,000 words / list size)",
             yaxis_title="",
             yaxis=dict(categoryorder="array", categoryarray=ordered_labels[::-1]),
         )

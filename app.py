@@ -64,7 +64,7 @@ st.markdown("""
     .top-topic-rank { font-size: 1.3rem; }
     .top-topic-label { font-weight: 600; flex: 1; }
     .top-topic-count { color: #555; font-size: 0.88rem; white-space: nowrap; }
-        .copyright-box {
+    .copyright-box {
         background: #fff3e0;
         border-left: 4px solid #e65100;
         border-radius: 6px;
@@ -84,23 +84,6 @@ st.markdown("""
         line-height: 1.7;
     }
 </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class="copyright-box">
-<b>Copyright & Data Notice</b><br>
-Article titles and individual sentences displayed in this dashboard are sourced from
-<b>BBC News</b> and <b>The Guardian</b> and remain the intellectual property of their
-respective publishers. This content is reproduced solely for <b>non-commercial academic
-research purposes</b> under fair-dealing principles.<br><br>
-<b>Sources:</b><br>
-• <b>The Guardian</b> , content accessed via the
-  <a href="https://open-platform.theguardian.com/" target="_blank">Guardian Open Platform</a>.
-  © Guardian News &amp; Media Ltd.<br>
-• <b>BBC News</b> , content sourced from
-  <a href="https://huggingface.co/datasets/RealTimeData/bbc_news_alltime" target="_blank">
-  RealTimeData / bbc_news_alltime</a> (Hugging Face). © BBC.<br><br>
-</div>
 """, unsafe_allow_html=True)
 
 COLORS = {
@@ -135,6 +118,7 @@ EVENTS = [
     ("Clean Power 2030 Plan",            "2025-04-10"),
 ]
 OUTLET_HOMEPAGES = {"BBC":          "https://www.bbc.co.uk/news", "The Guardian": "https://www.theguardian.com"}
+
 @st.cache_resource
 def load_topic_model():
     base_dir   = os.path.dirname(os.path.abspath(__file__))
@@ -150,10 +134,12 @@ def load_articles():
     df["adj_policy_density"]    = df["policy_density"]   / NUM_POLICY_KEYWORDS
     df["adj_renewable_density"] = df["renewable_density"] / NUM_TECH_KEYWORDS
     return df
+
 def _row_url(row):
     if "url" in row.index and pd.notna(row["url"]) and str(row["url"]).startswith("http"):
         return str(row["url"])
     return OUTLET_HOMEPAGES.get(row.get("outlet", ""), "#")
+
 @st.cache_data
 def load_sentiment():
     df = pd.read_csv("sentiment_lite.csv", encoding="utf-8-sig")
@@ -362,12 +348,10 @@ with tab1:
 
     st.divider()
 
-    # Sentiment gap: Renewables vs Policy
+    # Sentiment gap: Renewables vs Policy (100% Stacked Horizontal)
     st.subheader("Sentiment Gap: Renewables vs Policy")
     st.caption(
-        "Difference in % **positive** sentiment between Renewables and Policy coverage. "
-        "Positive values mean renewables are framed more positively than policy; "
-        "negative values mean the reverse."
+        "Distribution of positive, neutral, and negative sentiment between Renewables and Policy coverage."
     )
 
     if not filtered_sentiment.empty and len(all_aspects) >= 2:
@@ -381,29 +365,31 @@ with tab1:
             if col not in gap_df.columns:
                 gap_df[col] = 0
 
-        gap_df["pct_positive"] = gap_df["Positive"] / gap_df.sum(axis=1) * 100
-        gap_df["pct_negative"] = gap_df["Negative"] / gap_df.sum(axis=1) * 100
+        # Calculate percentages to force 100% stack
+        row_sums = gap_df[["Positive", "Neutral", "Negative"]].sum(axis=1)
+        gap_df["% Positive"] = gap_df["Positive"] / row_sums * 100
+        gap_df["% Neutral"] = gap_df["Neutral"] / row_sums * 100
+        gap_df["% Negative"] = gap_df["Negative"] / row_sums * 100
 
-        aspects_present = gap_df.index.tolist()
-        gap_summary = gap_df[["pct_positive", "pct_negative"]].reset_index()
-        gap_summary.columns = ["Category", "% Positive", "% Negative"]
+        gap_summary = gap_df[["% Negative", "% Neutral", "% Positive"]].reset_index()
+        gap_summary.columns = ["Category", "% Negative", "% Neutral", "% Positive"]
         gap_summary_melted = gap_summary.melt(
             id_vars="Category", var_name="Sentiment Type", value_name="Percentage"
         )
 
-        color_map = {"% Positive": "#a5d6a7", "% Negative": "#ffb3b3"}
+        color_map = {"% Positive": "#a5d6a7", "% Neutral": "#e0e0e0", "% Negative": "#ffb3b3"}
         fig_gap = px.bar(
-            gap_summary_melted, x="Category", y="Percentage",
-            color="Sentiment Type", barmode="group",
+            gap_summary_melted, x="Percentage", y="Category",
+            color="Sentiment Type", barmode="stack", orientation="h",
             color_discrete_map=color_map,
-            title="% Positive vs % Negative Sentiment by Category",
+            title="100% Stacked Sentiment Distribution by Category",
         )
-        fig_gap.update_layout(yaxis_title="% of Sentences", xaxis_title="")
+        fig_gap.update_layout(xaxis_title="% of Sentences", yaxis_title="")
         st.plotly_chart(fig_gap, use_container_width=True)
 
-        if "Renewables" in aspects_present and "Policy" in aspects_present:
-            re_pos  = gap_df.loc["Renewables", "pct_positive"]
-            pol_pos = gap_df.loc["Policy",     "pct_positive"]
+        if "Renewables" in gap_df.index and "Policy" in gap_df.index:
+            re_pos  = gap_df.loc["Renewables", "% Positive"]
+            pol_pos = gap_df.loc["Policy",     "% Positive"]
             gap_val = re_pos - pol_pos
             direction = "more positively" if gap_val > 0 else "more negatively"
             st.info(
@@ -412,55 +398,6 @@ with tab1:
             )
     else:
         st.info("Not enough sentiment data to compute a gap. Check your filters.")
-
-    st.divider()
-
-    # Sentiment trend over time
-    st.subheader("Sentiment Trend Over Time (Policy vs Renewables)")
-    st.caption("Quarterly share of positive, neutral, and negative sentences, stacked by aspect.")
-
-    order = ["Negative", "Neutral", "Positive"]
-    aspects_in_data = filtered_sentiment["aspect_category"].dropna().unique()
-
-    if len(aspects_in_data) > 0:
-        for aspect in aspects_in_data:
-            subset = filtered_sentiment[
-                filtered_sentiment["aspect_category"] == aspect
-            ].copy()
-            subset.set_index("published_date", inplace=True)
-
-            time_sent = (
-                subset
-                .groupby([pd.Grouper(freq="QE"), "sentiment"])
-                .size()
-                .unstack(fill_value=0)
-                .reindex(columns=order, fill_value=0)
-            )
-
-            if not time_sent.empty:
-                time_sent_pct = time_sent.div(time_sent.sum(axis=1), axis=0) * 100
-                time_sent_pct = time_sent_pct.reset_index()
-
-                fig_trend = go.Figure()
-                for sentiment in order:
-                    fig_trend.add_trace(go.Scatter(
-                        x=time_sent_pct["published_date"],
-                        y=time_sent_pct[sentiment],
-                        name=sentiment,
-                        mode="lines",
-                        stackgroup="one",
-                        line=dict(width=0.5, color=SENTIMENT_COLORS[sentiment]),
-                        fillcolor=SENTIMENT_COLORS[sentiment],
-                    ))
-                fig_trend.update_layout(
-                    title=f"Sentiment Trend: {aspect}",
-                    xaxis_title="Quarter",
-                    yaxis_title="% of Sentences",
-                    yaxis_range=[0, 100],
-                )
-                st.plotly_chart(fig_trend, use_container_width=True)
-    else:
-        st.info("No sentiment data available for the selected filters.")
 
 
 #tab 2
@@ -520,6 +457,7 @@ accessed via the original publishers:
             ).reset_index()
         else:
             rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
+            
         with st.expander(
             f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
         ):
@@ -529,11 +467,8 @@ accessed via the original publishers:
                     title   = art["title"] if pd.notna(art.get("title")) else "Untitled"
                     date    = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
                     outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
-                    url    = OUTLET_HOMEPAGES.get(outlet, "#")
-                    st.markdown( f'- [*{title}*]({url}){{target="_blank"}} , **{outlet}**, {date}',unsafe_allow_html=True)
-                st.caption(
-                    f"Titles © their respective publishers (BBC / The Guardian). "
-                    f"Reproduced for non-commercial research purposes only.")
+                    url     = OUTLET_HOMEPAGES.get(outlet, "#")
+                    st.markdown(f'- <i>{title}</i> , <a href="{url}" target="_blank"><b>{outlet}</b></a>, {date}', unsafe_allow_html=True)
             else:
                 st.info("No representative articles could be matched for this topic.")
                     
@@ -570,6 +505,7 @@ accessed via the original publishers:
                 "Filter by Sentiment:",
                 ["All", "Positive", "Neutral", "Negative"],
                 key="sent_sentiment")
+                
         # Build filtered sentence table
         sent_display = filtered_sentiment.copy()
         if sel_topic_sent != "All":
@@ -583,6 +519,7 @@ accessed via the original publishers:
             sent_display = sent_display[sent_display["aspect_category"] == sel_aspect_sent]
         if sel_sentiment_sent != "All":
             sent_display = sent_display[sent_display["sentiment"] == sel_sentiment_sent]
+            
         if not sent_display.empty:
             # ── Article selector ──────────────────────────────────────────────
             available_titles = (
@@ -615,7 +552,6 @@ accessed via the original publishers:
                 }).reset_index(drop=True)
 
                 st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
-                st.caption("Article titles and sentences © BBC / The Guardian.")
         else:
             st.info("No sentences match the current filters.")
 

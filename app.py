@@ -580,54 +580,54 @@ accessed via the original publishers:
             .sort_values("Topic", ascending=True)
         )
 
-    for _, row in topic_summary.iterrows():
-        topic_articles = non_outlier_t2[non_outlier_t2["Topic_Label"] == row["Topic_Label"]]
-        topic_id = int(row["Topic"])
-
-        # Get BERTopic's representative docs for this topic
-        if topic_model is not None:
-            try:
-                rep_docs = topic_model.get_representative_docs(topic_id)
-            except Exception:
-                rep_docs = []
-        else:
-            rep_docs = []
-
-        # Match representative texts back to dataframe rows
-        if rep_docs:
-            rep_articles = (
-                topic_articles[topic_articles["clean_text"].isin(rep_docs)]
-                .drop_duplicates(subset="clean_text")
-            )
-            rep_articles = rep_articles.set_index("clean_text").reindex(
-                [d for d in rep_docs if d in rep_articles["clean_text"].values]
-            ).reset_index()
-        else:
-            rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
-
-        with st.expander(
-            f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
-        ):
-            if not rep_articles.empty:
-                st.markdown("**Representative articles (BERTopic):**")
-                for _, art in rep_articles.iterrows():
-                    title      = art["title"] if pd.notna(art.get("title")) else "Untitled"
-                    date       = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
-                    outlet     = art["outlet"] if pd.notna(art.get("outlet")) else ""
-                    outlet_url = OUTLET_HOMEPAGES.get(outlet, "#")
-                    # FIX 4: title is plain text; only the outlet name is a link
-                    st.markdown(
-                        f'- *{title}*, '
-                        f'<a href="{outlet_url}" target="_blank"><b>{outlet}</b></a>, '
-                        f'{date}',
-                        unsafe_allow_html=True,
-                    )
-                st.caption(
-                    "Titles © their respective publishers (BBC / The Guardian). "
-                    "Reproduced for non-commercial research purposes only."
-                )
+        for _, row in topic_summary.iterrows():
+            topic_articles = non_outlier_t2[non_outlier_t2["Topic_Label"] == row["Topic_Label"]]
+            topic_id = int(row["Topic"])
+    
+            # Get BERTopic's representative docs for this topic
+            if topic_model is not None:
+                try:
+                    rep_docs = topic_model.get_representative_docs(topic_id)
+                except Exception:
+                    rep_docs = []
             else:
-                st.info("No representative articles could be matched for this topic.")
+                rep_docs = []
+    
+            # Match representative texts back to dataframe rows
+            if rep_docs:
+                rep_articles = (
+                    topic_articles[topic_articles["clean_text"].isin(rep_docs)]
+                    .drop_duplicates(subset="clean_text")
+                )
+                rep_articles = rep_articles.set_index("clean_text").reindex(
+                    [d for d in rep_docs if d in rep_articles["clean_text"].values]
+                ).reset_index()
+            else:
+                rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
+    
+            with st.expander(
+                f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
+            ):
+                if not rep_articles.empty:
+                    st.markdown("**Representative articles (BERTopic):**")
+                    for _, art in rep_articles.iterrows():
+                        title      = art["title"] if pd.notna(art.get("title")) else "Untitled"
+                        date       = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
+                        outlet     = art["outlet"] if pd.notna(art.get("outlet")) else ""
+                        outlet_url = OUTLET_HOMEPAGES.get(outlet, "#")
+                        # FIX 4: title is plain text; only the outlet name is a link
+                        st.markdown(
+                            f'- *{title}*, '
+                            f'<a href="{outlet_url}" target="_blank"><b>{outlet}</b></a>, '
+                            f'{date}',
+                            unsafe_allow_html=True,
+                        )
+                    st.caption(
+                        "Titles © their respective publishers (BBC / The Guardian). "
+                        "Reproduced for non-commercial research purposes only."
+                    )
+                else:
+                    st.info("No representative articles could be matched for this topic.")
 
     st.divider()
     st.header("Aspect-Based Sentiment Explorer by Category")

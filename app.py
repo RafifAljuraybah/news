@@ -335,7 +335,7 @@ research purposes</b> under fair-dealing principles.<br><br>
         )
         total_over_time["Frequency"] = (
             total_over_time["Frequency"]
-            .rolling(3, min_periods=1, center=True)
+            .rolling(1, min_periods=1, center=True)
             .mean()
         )
 

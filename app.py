@@ -247,8 +247,8 @@ research purposes</b> under fair-dealing principles.<br><br>
 
     m1, m2, m3 = st.columns(3)
     m1.metric("Total Articles", f"{total_filtered:,}")
-    m2.metric("🔵 The Guardian",  f"{guardian_filtered:,}")
-    m3.metric("🔴 BBC",           f"{bbc_filtered:,}")
+    m2.metric("The Guardian",  f"{guardian_filtered:,}")
+    m3.metric("BBC",           f"{bbc_filtered:,}")
     st.divider()
 
     # Coverage over time
@@ -704,7 +704,7 @@ In this project, two <b>aspects</b> are tracked in every sentence:
       battery storage, etc.</li>
 </ul>
 
-A single sentence can carry <em>different</em> tones toward each aspect. For example:<br>
+A single sentence can carry <em>different</em> tones toward each category. For example:<br>
 <blockquote>
 <em>"The government's offshore wind targets are hopelessly behind schedule,
 but the technology itself continues to break cost records."</em>

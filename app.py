@@ -117,7 +117,10 @@ EVENTS = [
     ("COP29 & 81% Emission Target",      "2024-11-12"),
     ("Clean Power 2030 Plan",            "2025-04-10"),
 ]
-OUTLET_HOMEPAGES = {"BBC":          "https://www.bbc.co.uk/news", "The Guardian": "https://www.theguardian.com"}
+OUTLET_HOMEPAGES = {
+    "BBC":          "https://www.bbc.co.uk/news",
+    "The Guardian": "https://www.theguardian.com",
+}
 
 @st.cache_resource
 def load_topic_model():
@@ -191,7 +194,7 @@ st.sidebar.caption(
     f"{NUM_TECH_KEYWORDS} renewable-energy keywords"
 )
 
-# Apply filters (topics not filtered at sidebar level, use Tab 2 to explore by topic)
+# Apply filters
 all_topics = sorted(
     articles_df["Topic_Label"].dropna().unique().tolist(),
     key=lambda lbl: articles_df.loc[articles_df["Topic_Label"] == lbl, "Topic"].min(),
@@ -216,8 +219,26 @@ tab1, tab2, tab3 = st.tabs([
     "ℹ️ About & Methods",
 ])
 
-#tab 1
+# ── TAB 1 ─────────────────────────────────────────────────────────────────────
 with tab1:
+
+    # FIX 1: one copyright notice per tab, placed here inside tab1
+    st.markdown("""
+<div class="copyright-box">
+<b>Copyright & Data Notice</b><br>
+Article titles and individual sentences displayed in this dashboard are sourced from
+<b>BBC News</b> and <b>The Guardian</b> and remain the intellectual property of their
+respective publishers. This content is reproduced solely for <b>non-commercial academic
+research purposes</b> under fair-dealing principles.<br><br>
+<b>Sources:</b><br>
+• <b>The Guardian</b>, content accessed via the
+  <a href="https://open-platform.theguardian.com/" target="_blank">Guardian Open Platform</a>.
+  © Guardian News &amp; Media Ltd.<br>
+• <b>BBC News</b>, content sourced from
+  <a href="https://huggingface.co/datasets/RealTimeData/bbc_news_alltime" target="_blank">
+  RealTimeData / bbc_news_alltime</a> (Hugging Face). © BBC.
+</div>
+""", unsafe_allow_html=True)
 
     total_filtered    = len(filtered_articles)
     guardian_filtered = len(filtered_articles[filtered_articles["outlet"] == "The Guardian"])
@@ -279,7 +300,7 @@ with tab1:
 
     st.divider()
 
-    # Top 3 topics by volume , vertical layout
+    # Top 3 topics by volume
     st.subheader("Top 3 Topics by Volume")
 
     non_outlier = filtered_articles[filtered_articles["Topic"] != -1]
@@ -348,10 +369,11 @@ with tab1:
 
     st.divider()
 
-    # Sentiment gap: Renewables vs Policy (100% Stacked Horizontal)
+    # FIX 3: Sentiment Gap — 100% Stacked Horizontal Bar Chart
     st.subheader("Sentiment Gap: Renewables vs Policy")
     st.caption(
-        "Distribution of positive, neutral, and negative sentiment between Renewables and Policy coverage."
+        "Distribution of **positive**, **neutral**, and **negative** sentiment across "
+        "Renewables and Policy coverage."
     )
 
     if not filtered_sentiment.empty and len(all_aspects) >= 2:
@@ -365,31 +387,46 @@ with tab1:
             if col not in gap_df.columns:
                 gap_df[col] = 0
 
-        # Calculate percentages to force 100% stack
-        row_sums = gap_df[["Positive", "Neutral", "Negative"]].sum(axis=1)
-        gap_df["% Positive"] = gap_df["Positive"] / row_sums * 100
-        gap_df["% Neutral"] = gap_df["Neutral"] / row_sums * 100
-        gap_df["% Negative"] = gap_df["Negative"] / row_sums * 100
+        total = gap_df[["Positive", "Neutral", "Negative"]].sum(axis=1)
+        gap_df["pct_positive"] = gap_df["Positive"] / total * 100
+        gap_df["pct_neutral"]  = gap_df["Neutral"]  / total * 100
+        gap_df["pct_negative"] = gap_df["Negative"] / total * 100
 
-        gap_summary = gap_df[["% Negative", "% Neutral", "% Positive"]].reset_index()
-        gap_summary.columns = ["Category", "% Negative", "% Neutral", "% Positive"]
-        gap_summary_melted = gap_summary.melt(
-            id_vars="Category", var_name="Sentiment Type", value_name="Percentage"
-        )
+        aspects_present = gap_df.index.tolist()
 
-        color_map = {"% Positive": "#a5d6a7", "% Neutral": "#e0e0e0", "% Negative": "#ffb3b3"}
+        # Build long-form dataframe for 100% stacked horizontal bar
+        stacked_rows = []
+        for cat in aspects_present:
+            stacked_rows.append({"Category": cat, "Sentiment": "Positive",  "Percentage": gap_df.loc[cat, "pct_positive"]})
+            stacked_rows.append({"Category": cat, "Sentiment": "Neutral",   "Percentage": gap_df.loc[cat, "pct_neutral"]})
+            stacked_rows.append({"Category": cat, "Sentiment": "Negative",  "Percentage": gap_df.loc[cat, "pct_negative"]})
+        stacked_df = pd.DataFrame(stacked_rows)
+
+        # Order sentiments: Positive | Neutral | Negative
+        sentiment_order = ["Positive", "Neutral", "Negative"]
+        stacked_df["Sentiment"] = pd.Categorical(stacked_df["Sentiment"], categories=sentiment_order, ordered=True)
+        stacked_df = stacked_df.sort_values("Sentiment")
+
+        color_map = {"Positive": "#a5d6a7", "Neutral": "#e0e0e0", "Negative": "#ffb3b3"}
         fig_gap = px.bar(
-            gap_summary_melted, x="Percentage", y="Category",
-            color="Sentiment Type", barmode="stack", orientation="h",
+            stacked_df, x="Percentage", y="Category",
+            color="Sentiment", orientation="h",
             color_discrete_map=color_map,
-            title="100% Stacked Sentiment Distribution by Category",
+            category_orders={"Sentiment": sentiment_order},
+            title="Sentiment Distribution by Category",
+            text=stacked_df["Percentage"].apply(lambda v: f"{v:.1f}%"),
         )
-        fig_gap.update_layout(xaxis_title="% of Sentences", yaxis_title="")
+        fig_gap.update_layout(
+            barmode="stack",
+            xaxis=dict(title="% of Sentences", range=[0, 100]),
+            yaxis_title="",
+        )
+        fig_gap.update_traces(textposition="inside", insidetextanchor="middle")
         st.plotly_chart(fig_gap, use_container_width=True)
 
-        if "Renewables" in gap_df.index and "Policy" in gap_df.index:
-            re_pos  = gap_df.loc["Renewables", "% Positive"]
-            pol_pos = gap_df.loc["Policy",     "% Positive"]
+        if "Renewables" in aspects_present and "Policy" in aspects_present:
+            re_pos  = gap_df.loc["Renewables", "pct_positive"]
+            pol_pos = gap_df.loc["Policy",     "pct_positive"]
             gap_val = re_pos - pol_pos
             direction = "more positively" if gap_val > 0 else "more negatively"
             st.info(
@@ -399,8 +436,10 @@ with tab1:
     else:
         st.info("Not enough sentiment data to compute a gap. Check your filters.")
 
+    # FIX 2: "Sentiment Trend Over Time" section removed entirely
 
-#tab 2
+
+# ── TAB 2 ─────────────────────────────────────────────────────────────────────
 with tab2:
 
     st.header("Topic Overview")
@@ -408,6 +447,8 @@ with tab2:
         "Each topic was discovered automatically by BERTopic. The representative "
         "articles below give a flavour of what each cluster is about."
     )
+
+    # FIX 1: one copyright notice for this tab
     st.markdown("""
 <div class="copyright-box">
 <b>Content Attribution</b><br>
@@ -435,43 +476,52 @@ accessed via the original publishers:
     for _, row in topic_summary.iterrows():
         topic_articles = non_outlier_t2[non_outlier_t2["Topic_Label"] == row["Topic_Label"]]
         topic_id = int(row["Topic"])
-    
+
         # Get BERTopic's representative docs for this topic
         if topic_model is not None:
             try:
-                rep_docs = topic_model.get_representative_docs(topic_id)  # list of text strings
+                rep_docs = topic_model.get_representative_docs(topic_id)
             except Exception:
                 rep_docs = []
         else:
             rep_docs = []
-    
+
         # Match representative texts back to dataframe rows
         if rep_docs:
             rep_articles = (
                 topic_articles[topic_articles["clean_text"].isin(rep_docs)]
                 .drop_duplicates(subset="clean_text")
             )
-            # Preserve the order BERTopic returned them in
             rep_articles = rep_articles.set_index("clean_text").reindex(
                 [d for d in rep_docs if d in rep_articles["clean_text"].values]
             ).reset_index()
         else:
             rep_articles = topic_articles.sort_values("published_date", ascending=False).head(3)
-            
+
         with st.expander(
             f"**{row['Topic_Label']}** · {row['Article Count']} articles", expanded=False
         ):
             if not rep_articles.empty:
                 st.markdown("**Representative articles (BERTopic):**")
                 for _, art in rep_articles.iterrows():
-                    title   = art["title"] if pd.notna(art.get("title")) else "Untitled"
-                    date    = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
-                    outlet  = art["outlet"] if pd.notna(art.get("outlet")) else ""
-                    url     = OUTLET_HOMEPAGES.get(outlet, "#")
-                    st.markdown(f'- <i>{title}</i> , <a href="{url}" target="_blank"><b>{outlet}</b></a>, {date}', unsafe_allow_html=True)
+                    title      = art["title"] if pd.notna(art.get("title")) else "Untitled"
+                    date       = str(art["published_date"].date()) if pd.notna(art.get("published_date")) else ""
+                    outlet     = art["outlet"] if pd.notna(art.get("outlet")) else ""
+                    outlet_url = OUTLET_HOMEPAGES.get(outlet, "#")
+                    # FIX 4: title is plain text; only the outlet name is a link
+                    st.markdown(
+                        f'- *{title}*, '
+                        f'<a href="{outlet_url}" target="_blank"><b>{outlet}</b></a>, '
+                        f'{date}',
+                        unsafe_allow_html=True,
+                    )
+                st.caption(
+                    "Titles © their respective publishers (BBC / The Guardian). "
+                    "Reproduced for non-commercial research purposes only."
+                )
             else:
                 st.info("No representative articles could be matched for this topic.")
-                    
+
     else:
         st.info("No topic data available for the selected filters.")
 
@@ -479,7 +529,8 @@ accessed via the original publishers:
     st.header("Aspect-Based Sentiment Explorer by Category")
     st.caption(
         "Browse the individual sentences that underpin the sentiment analysis. "
-        "Filter by topic, outlet, category, and sentiment label. ")
+        "Filter by topic, outlet, category, and sentiment label."
+    )
 
     available_topics_t2 = sorted(
         non_outlier_t2["Topic_Label"].dropna().unique().tolist(),
@@ -505,7 +556,7 @@ accessed via the original publishers:
                 "Filter by Sentiment:",
                 ["All", "Positive", "Neutral", "Negative"],
                 key="sent_sentiment")
-                
+
         # Build filtered sentence table
         sent_display = filtered_sentiment.copy()
         if sel_topic_sent != "All":
@@ -519,9 +570,8 @@ accessed via the original publishers:
             sent_display = sent_display[sent_display["aspect_category"] == sel_aspect_sent]
         if sel_sentiment_sent != "All":
             sent_display = sent_display[sent_display["sentiment"] == sel_sentiment_sent]
-            
+
         if not sent_display.empty:
-            # ── Article selector ──────────────────────────────────────────────
             available_titles = (
                 sent_display
                 .dropna(subset=["title"])
@@ -552,11 +602,12 @@ accessed via the original publishers:
                 }).reset_index(drop=True)
 
                 st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+                st.caption("Article titles and sentences © BBC / The Guardian.")
         else:
             st.info("No sentences match the current filters.")
 
 
-#tab 3
+# ── TAB 3 ─────────────────────────────────────────────────────────────────────
 with tab3:
     st.header("About This Dashboard")
     st.markdown(
@@ -667,16 +718,16 @@ Sentiment labels were assigned by a fine-tuned AI classifier trained specificall
     with st.expander("How do I read the Sentiment Gap chart?"):
         st.markdown("""
 <div class="faq-box">
-The Sentiment Gap chart compares the share of <b>positive</b> and <b>negative</b>
-sentences for the <b>Renewables</b> aspect versus the <b>Policy</b> aspect.<br><br>
+The Sentiment Gap chart shows the full sentiment distribution (positive, neutral, negative)
+for <b>Renewables</b> and <b>Policy</b> coverage as a 100% stacked horizontal bar.<br><br>
 
 <b>What to look for:</b>
 <ul>
-  <li>If the <b>Renewables bar is taller</b> on the positive side, news coverage frames
-      renewable technology more optimistically than government policy.</li>
-  <li>If the <b>Policy bar is taller</b> on the positive side, policy is covered more
-      favourably than the technology itself (less common).</li>
-  <li>A large gap in the <b>negative</b> bars shows which topic receives more critical coverage.</li>
+  <li>If the <b>Renewables bar has a larger green segment</b>, renewable technology is
+      framed more optimistically than government policy.</li>
+  <li>If the <b>Policy bar has a larger green segment</b>, policy is covered more
+      favourably (less common).</li>
+  <li>A wide red segment shows which topic receives proportionally more critical coverage.</li>
 </ul>
 
 The summary sentence below the chart tells you the gap in percentage points at a glance.

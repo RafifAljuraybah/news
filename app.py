@@ -334,82 +334,62 @@ research purposes</b> under fair-dealing principles.<br><br>
         )
         tl["Short_Label"] = tl["Topic_Label"].str.replace(r"^\d+\.\s*", "", regex=True)
 
-        col_sel, col_chart = st.columns([1, 3])
+        fig_tft = go.Figure()
 
-        with col_sel:
-            st.markdown("**Topics**")
-            btn_c1, btn_c2 = st.columns(2)
-            if btn_c1.button("All", key="tft_all"):
-                for tid in tl["Topic"].tolist():
-                    st.session_state[f"tft_{tid}"] = True
-            if btn_c2.button("Clear", key="tft_clear"):
-                for tid in tl["Topic"].tolist():
-                    st.session_state[f"tft_{tid}"] = False
+        for _, tr in tl.iterrows():
+            td = topic_time[topic_time["Topic"] == tr["Topic"]]
+            fig_tft.add_trace(go.Scatter(
+                x=td["Timestamp"],
+                y=td["Frequency"],
+                name=tr["Short_Label"],
+                mode="lines",
+                line=dict(width=1.5, shape="spline", smoothing=1.3),
+                hovertemplate="%{y} articles<extra>" + tr["Short_Label"] + "</extra>",
+            ))
 
-            selected_topics = []
-            for _, tr in tl.iterrows():
-                short = tr["Short_Label"]
-                display = short if len(short) <= 33 else short[:31] + "\u2026"
-                if st.checkbox(display, value=True, key=f"tft_{tr['Topic']}"):
-                    selected_topics.append(tr["Topic"])
+        fig_tft.add_trace(go.Scatter(
+            x=total_over_time["Timestamp"],
+            y=total_over_time["Frequency"],
+            name="Total (all topics)",
+            mode="lines",
+            line=dict(color="slategray", width=2, dash="dash", shape="spline", smoothing=1.3),
+            yaxis="y2",
+            hovertemplate="%{y} articles<extra>Total (all topics)</extra>",
+        ))
 
-        with col_chart:
-            if selected_topics:
-                subset = topic_time[topic_time["Topic"].isin(selected_topics)]
-
-                fig_tft = go.Figure()
-
-                for _, tr in tl[tl["Topic"].isin(selected_topics)].iterrows():
-                    td = subset[subset["Topic"] == tr["Topic"]]
-                    fig_tft.add_trace(go.Scatter(
-                        x=td["Timestamp"],
-                        y=td["Frequency"],
-                        name=tr["Short_Label"],
-                        mode="lines",
-                        line=dict(width=2),
-                        hovertemplate="%{y} articles<extra>" + tr["Short_Label"] + "</extra>",
-                    ))
-
-                fig_tft.add_trace(go.Scatter(
-                    x=total_over_time["Timestamp"],
-                    y=total_over_time["Frequency"],
-                    name="Total (all topics)",
-                    mode="lines",
-                    line=dict(color="slategray", width=2, dash="dash"),
-                    yaxis="y2",
-                    hovertemplate="%{y} articles<extra>Total (all topics)</extra>",
-                ))
-
-                fig_tft.update_layout(
-                    xaxis_title="Date",
-                    yaxis=dict(title="Articles per Month", rangemode="nonnegative"),
-                    yaxis2=dict(
-                        title="Total Articles",
-                        overlaying="y",
-                        side="right",
-                        showgrid=False,
-                        rangemode="nonnegative",
-                        tickfont=dict(color="slategray"),
-                        title_font=dict(color="slategray"),
-                    ),
-                    hovermode="x unified",
-                    legend=dict(
-                        orientation="v",
-                        yanchor="top", y=1,
-                        xanchor="left", x=1.06,
-                        font=dict(size=11),
-                        bgcolor="rgba(255,255,255,0.85)",
-                        bordercolor="#dee2e6",
-                        borderwidth=1,
-                    ),
-                    margin=dict(r=20, t=10, b=40),
-                    height=520,
-                )
-                st.plotly_chart(fig_tft, use_container_width=True)
-            else:
-                st.info("Select at least one topic to display the chart.")
+        fig_tft.update_layout(
+            xaxis_title="Date",
+            yaxis=dict(title="Articles per Month", rangemode="nonnegative"),
+            yaxis2=dict(
+                title="Total Articles",
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                rangemode="nonnegative",
+                tickfont=dict(color="slategray"),
+                title_font=dict(color="slategray"),
+            ),
+            hovermode="x unified",
+            legend=dict(
+                orientation="v",
+                yanchor="top", y=1,
+                xanchor="left", x=1.06,
+                font=dict(size=11),
+                bgcolor="rgba(255,255,255,0.85)",
+                bordercolor="#dee2e6",
+                borderwidth=1,
+                itemclick="toggle",
+                itemdoubleclick="toggleothers",
+            ),
+            margin=dict(r=20, t=10, b=40),
+            height=520,
+        )
+        st.caption("💡 Click a topic in the legend to hide/show it. Double-click to isolate it.")
+        st.plotly_chart(fig_tft, use_container_width=True)
     else:
         st.info("No topic data available for the selected filters.")
+
+
 
     st.divider()
 

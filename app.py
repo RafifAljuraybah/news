@@ -304,8 +304,8 @@ research purposes</b> under fair-dealing principles.<br><br>
     # Topic frequency over time — interactive, topic selector on the left
     st.subheader("Topic Frequency Over Time")
     st.caption(
-        "Monthly article count per topic. Toggle topics using the panel on the left. "
-        "The dashed grey line shows the total across all non-outlier topics (right axis)."
+        "Monthly article count per topic."
+        "The dashed grey line shows the total across all topics (right axis)."
     )
 
     non_outlier_time = filtered_articles[filtered_articles["Topic"] != -1].copy()

@@ -582,7 +582,6 @@ accessed via the original publishers:
             sent_display = sent_display[sent_display["aspect_category"] == sel_aspect_sent]
         if sel_sentiment_sent != "All":
             sent_display = sent_display[sent_display["sentiment"] == sel_sentiment_sent]
-        st.markdown(f"**{len(sent_display):,} sentences** match the current filters.")
         if not sent_display.empty:
             # ── Article selector ──────────────────────────────────────────────
             available_titles = (

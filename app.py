@@ -525,9 +525,6 @@ accessed via the original publishers:
             else:
                 st.info("No representative articles could be matched for this topic.")
 
-    else:
-        st.info("No topic data available for the selected filters.")
-
     st.divider()
     st.header("Aspect-Based Sentiment Explorer by Category")
     st.caption(

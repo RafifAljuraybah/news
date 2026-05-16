@@ -311,6 +311,16 @@ research purposes</b> under fair-dealing principles.<br><br>
     non_outlier_time = filtered_articles[filtered_articles["Topic"] != -1].copy()
 
     if not non_outlier_time.empty:
+        # 1. CREATE topic_time first
+        topic_time = (
+            non_outlier_time
+            .groupby([pd.Grouper(key="published_date", freq="ME"), "Topic", "Topic_Label"])
+            .size()
+            .reset_index(name="Frequency")
+            .rename(columns={"published_date": "Timestamp"})
+        )
+        
+        # 2. APPLY the fix we just made
         topic_time = topic_time.sort_values(["Topic", "Topic_Label", "Timestamp"])
         topic_time["Frequency"] = (
             topic_time
@@ -318,6 +328,7 @@ research purposes</b> under fair-dealing principles.<br><br>
             .transform(lambda x: x.rolling(3, min_periods=1, center=True).mean())
         )
 
+        # 3. Create total_over_time
         total_over_time = (
             non_outlier_time
             .groupby(pd.Grouper(key="published_date", freq="ME"))

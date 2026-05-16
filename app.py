@@ -353,7 +353,7 @@ research purposes</b> under fair-dealing principles.<br><br>
             var_name="Keyword Type", value_name="Density",
         )
         topic_density_melted["Keyword Type"] = topic_density_melted["Keyword Type"].map(
-            {"adj_policy_density": "Policy Focus", "adj_renewable_density": "RE Focus"}
+            {"adj_policy_density": "Policy Focus", "adj_renewable_density": "R Focus"}
         )
 
         fig_density = px.bar(

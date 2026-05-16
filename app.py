@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -314,10 +315,12 @@ research purposes</b> under fair-dealing principles.<br><br>
         )
         rank_labels = ["🥇", "🥈", "🥉"]
         for idx, (_, row) in enumerate(topic_counts.iterrows()):
+            # Strip leading "N. " topic-ID prefix (e.g. "0. International…" → "International…")
+            label = re.sub(r"^\d+\.\s*", "", row["Topic_Label"])
             st.markdown(
                 f"""<div class="top-topic-row">
                     <span class="top-topic-rank">{rank_labels[idx]}</span>
-                    <span class="top-topic-label">{row['Topic_Label']}</span>
+                    <span class="top-topic-label">{label}</span>
                     <span class="top-topic-count">{row['count']:,} articles</span>
                 </div>""",
                 unsafe_allow_html=True,
@@ -359,7 +362,7 @@ research purposes</b> under fair-dealing principles.<br><br>
             title="Mean Adjusted Keyword Density by Topic",
         )
         fig_density.update_layout(
-            xaxis_title="Mean Adjusted Keyword Density (per 1,000 words / list size)",
+            xaxis_title="Mean Adjusted Keyword Density (mentions per 1,000 words / list size)",
             yaxis_title="",
             yaxis=dict(categoryorder="array", categoryarray=ordered_labels[::-1]),
         )
@@ -600,6 +603,7 @@ accessed via the original publishers:
                     "sentiment":       "Sentiment",
                     "sentence":        "Sentence",
                 }).reset_index(drop=True)
+                table_df["Target Term"] = table_df["Target Term"].str.lower()
 
                 st.write(table_df.to_html(escape=False, index=False), unsafe_allow_html=True)
                 st.caption("Article titles and sentences © BBC / The Guardian.")

@@ -318,6 +318,13 @@ research purposes</b> under fair-dealing principles.<br><br>
             .reset_index(name="Frequency")
             .rename(columns={"published_date": "Timestamp"})
         )
+        topic_time = (
+            topic_time
+            .sort_values("Timestamp")
+            .groupby(["Topic", "Topic_Label"], group_keys=False)
+            .apply(lambda g: g.assign(Frequency=g["Frequency"].rolling(3, min_periods=1, center=True).mean()))
+            .reset_index(drop=True)
+        )
 
         total_over_time = (
             non_outlier_time
@@ -325,6 +332,11 @@ research purposes</b> under fair-dealing principles.<br><br>
             .size()
             .reset_index(name="Frequency")
             .rename(columns={"published_date": "Timestamp"})
+        )
+        total_over_time["Frequency"] = (
+            total_over_time["Frequency"]
+            .rolling(3, min_periods=1, center=True)
+            .mean()
         )
 
         tl = (
@@ -343,7 +355,7 @@ research purposes</b> under fair-dealing principles.<br><br>
                 y=td["Frequency"],
                 name=tr["Short_Label"],
                 mode="lines",
-                line=dict(width=1.5, shape="spline", smoothing=1.3),
+                line=dict(width=1.5),
                 hovertemplate="%{y} articles<extra>" + tr["Short_Label"] + "</extra>",
             ))
 
@@ -352,7 +364,7 @@ research purposes</b> under fair-dealing principles.<br><br>
             y=total_over_time["Frequency"],
             name="Total (all topics)",
             mode="lines",
-            line=dict(color="slategray", width=2, dash="dash", shape="spline", smoothing=1.3),
+            line=dict(color="slategray", width=2, dash="dash"),
             yaxis="y2",
             hovertemplate="%{y} articles<extra>Total (all topics)</extra>",
         ))

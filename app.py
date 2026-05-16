@@ -311,19 +311,11 @@ research purposes</b> under fair-dealing principles.<br><br>
     non_outlier_time = filtered_articles[filtered_articles["Topic"] != -1].copy()
 
     if not non_outlier_time.empty:
-        topic_time = (
-            non_outlier_time
-            .groupby([pd.Grouper(key="published_date", freq="ME"), "Topic", "Topic_Label"])
-            .size()
-            .reset_index(name="Frequency")
-            .rename(columns={"published_date": "Timestamp"})
-        )
-        topic_time = (
+        topic_time = topic_time.sort_values(["Topic", "Topic_Label", "Timestamp"])
+        topic_time["Frequency"] = (
             topic_time
-            .sort_values("Timestamp")
-            .groupby(["Topic", "Topic_Label"], group_keys=False)
-            .apply(lambda g: g.assign(Frequency=g["Frequency"].rolling(3, min_periods=1, center=True).mean()))
-            .reset_index(drop=True)
+            .groupby(["Topic", "Topic_Label"])["Frequency"]
+            .transform(lambda x: x.rolling(3, min_periods=1, center=True).mean())
         )
 
         total_over_time = (
